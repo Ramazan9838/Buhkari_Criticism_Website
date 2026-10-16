@@ -202,6 +202,17 @@ button:disabled { opacity: .6; cursor: progress; }
     }
   };
 
+  /* Yayındaki ek şifreli dosyalar (site dışındakiler; ör. 'okuma': araç okuması, parcalar/47_okuma.js). Rahle varlığını ve
+     özetini window.parent.__rahleDosyaBilgi(ad) ile, açık metnini window.parent.__rahleDosya(ad) ile alır (aynı köken). */
+  window.__rahleDosyaBilgi = function (ad) {
+    var d = ad !== 'site' && kasa && kasa.dosyalar && kasa.dosyalar[ad];
+    return d && anahtar ? { ad: ad, ozet: d.ozet, boyut: d.boyut } : null;
+  };
+  window.__rahleDosya = function (ad) {
+    if (!window.__rahleDosyaBilgi(ad)) return Promise.reject(new Error('yayında ' + ad + ' dosyası yok'));
+    return dosyaAc(ad);
+  };
+
   // Rahle kendi içinde #/… rotalarıyla gezinir; rota dış adrese yansıtılır ki yenileme ve bağlantı aynı ekranı açsın.
   function rotaEsitle(f) {
     var w; try { w = f.contentWindow; } catch (e) { return; }
