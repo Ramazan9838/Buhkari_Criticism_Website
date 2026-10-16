@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Rahle</title>
+<style>
+/* Giriş sayfası: Rahle'nin şifreli kopyasını açar ve ortak kayıt bağlantısını (mühürlü erişim anahtarı) Rahle'ye
+   köprüyle verir. Şifre çözme yalnız tarayıcıda yapılır. Eşitlemeyi Rahle içindeki ortak kayıt modülü yürütür; bu sayfa
+   Rahle'nin üstüne hiçbir şey çizmez. */
+:root {
+  color-scheme: light;
+  --bg: #f3f2ee; --paper: #fcfcfb; --ink: #1c2422; --ink-2: #4f5754; --line: #cfccc3;
+  --accent: #1f5c4b; --accent-2: #2a7a64; --bad: #b3261e; --focus: #2a78d6;
+  --shadow: 0 1px 2px rgba(20,30,25,.06), 0 10px 30px rgba(20,30,25,.10);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121412; --paper: #1a1a19; --ink: #eceee9; --ink-2: #c3c2b7; --line: #3d403b;
+    --accent: #6cc2a3; --accent-2: #86d4b7; --bad: #ff8a80; --focus: #6da7ec;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif; }
+#giris { min-height: 100%; display: grid; place-items: center; padding: 24px 16px; }
+.kart { width: 100%; max-width: 380px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 28px 24px; }
+h1 { font-size: 19px; margin: 0 0 4px; line-height: 1.3; }
+.alt { color: var(--ink-2); font-size: 13.5px; margin: 0 0 22px; }
+label { display: block; font-size: 13px; font-weight: 600; margin: 14px 0 6px; }
+input { width: 100%; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+input:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+button { width: 100%; margin-top: 20px; font: inherit; font-weight: 600; color: #fff; background: var(--accent); border: 0; border-radius: 8px; padding: 11px 12px; cursor: pointer; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button { color: #10201a; } }
+button:hover { background: var(--accent-2); }
+button:disabled { opacity: .6; cursor: progress; }
+#durum { min-height: 22px; margin: 14px 0 0; font-size: 13.5px; color: var(--ink-2); }
+#durum.hata { color: var(--bad); }
+.not { margin: 18px 0 0; font-size: 12px; color: var(--ink-2); }
+#site { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: none; background: var(--bg); }
+</style>
+</head>
+<body>
+<main id="giris">
+  <form class="kart" id="form" autocomplete="on">
+    <h1>Rahle</h1>
+    <p class="alt">Buhârî şerh literatüründe tenkit · yalnız yetkili giriş</p>
+    <label for="kullanici">Kullanıcı adı</label>
+    <input id="kullanici" name="username" autocomplete="username" value="Admin" required>
+    <label for="sifre">Şifre</label>
+    <input id="sifre" name="password" type="password" autocomplete="current-password" required autofocus>
+    <button id="gir" type="submit">Giriş</button>
+    <p id="durum" role="status" aria-live="polite"></p>
+    <p class="not">Sayfanın içeriği şifrelidir; şifre çözme bu tarayıcıda yapılır, şifre hiçbir yere gönderilmez. Kayıtlarınız bu tarayıcının deposunda kalır.</p>
+  </form>
+</main>
+<iframe id="site" title="Rahle"></iframe>
+<script src="ortak.js"></script>
+<script>
+(function () {
+  'use strict';
+  var OTURUM = 'rahle.yayin.oturum', OTURUM_AD = 'rahle.yayin.kullanici';
+  // localStorage anahtarı bilerek 'rahle.' önekli değil: Rahle'nin deposu o önekteki yerel olmayan anahtarları taşır.
+  var YEREL_BAG = 'rahleYayin.ortak', MUHUR_EK = 'rahle-ortak';
+  var VARSAYILAN = { depo: 'Ramazan9838/Rahle', dal: 'ortak-kayit', yayin: 'Ramazan9838/Buhkari_Criticism_Website' };
+  var enc = new TextEncoder(), dec = new TextDecoder();
+  var kasa = null, anahtar = null, kullanici = 'Admin';
+  var $ = function (id) { return document.getElementById(id); };
+
+  function b64(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+  function b64Yap(u) { var s = ''; for (var i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); }
+  function durum(t, hata) { var d = $('durum'); d.textContent = t || ''; d.className = hata ? 'hata' : ''; }
+
+  function kasaGetir() {
+    return fetch('kasa.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) {
+      if (!r.ok) throw new Error('kasa.json okunamadı (' + r.status + ')');
+      return r.json();
+    }).then(function (k) { kasa = k; return k; });
+  }
+
+  // Şifreden anahtar türetilir (PBKDF2-SHA256), yuvadaki veri anahtarı onunla açılır (AES-GCM).
+  function yuvaAc(ad, sifre) {
+    var aranan = ad.trim().toLocaleLowerCase('tr');
+    var y = kasa.yuvalar.filter(function (x) { return x.kullanici.toLocaleLowerCase('tr') === aranan; })[0];
+    if (!y) return Promise.reject(new Error('giris'));
+    return crypto.subtle.importKey('raw', enc.encode(sifre), 'PBKDF2', false, ['deriveKey']).then(function (k) {
+      return crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt: b64(y.salt), iterations: y.iter },
+        k, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    }).then(function (kek) {
+      var w = b64(y.w);
+      return crypto.subtle.decrypt({ name: 'AES-GCM', iv: w.slice(0, 12), additionalData: enc.encode('rahle-yuva:' + y.kullanici) }, kek, w.slice(12));
+    }).then(function (ham) { return { ham: ham, ad: y.kullanici }; }).catch(function () { throw new Error('giris'); });
+  }
+
+  // Veri anahtarı: şifreli parçaları açar ve ortak kayıt bağlantısını mühürler (AES-GCM).
+  function anahtarKur(ham) {
+    return crypto.subtle.importKey('raw', ham, 'AES-GCM', false, ['encrypt', 'decrypt']).then(function (k) { anahtar = k; return k; });
+  }
+  function muhurle(nesne) {
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv, additionalData: enc.encode(MUHUR_EK) }, anahtar, enc.encode(JSON.stringify(nesne))).then(function (c) {
+      var u = new Uint8Array(12 + c.byteLength); u.set(iv); u.set(new Uint8Array(c), 12); return b64Yap(u);
+    });
+  }
+  function muhurAc(metin) {
+    var u = b64(metin);
+    return crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.slice(0, 12), additionalData: enc.encode(MUHUR_EK) }, anahtar, u.slice(12)).then(function (a) { return JSON.parse(dec.decode(a)); });
+  }
+
+  // Sitenin şifreli parçaları indirilir, çözülür, birleştirilir ve gzip açılır.
+  function dosyaAc(ad, ilerleme) {
+    var d = kasa.dosyalar[ad], parcalar = [], bitti = 0;
+    return Promise.all(d.parcalar.map(function (yol, i) {
+      return fetch(yol).then(function (r) {
+        if (!r.ok) throw new Error(yol + ' indirilemedi (' + r.status + ')');
+        return r.arrayBuffer();
+      }).then(function (buf) {
+        var u = new Uint8Array(buf);
+        return crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.slice(0, 12), additionalData: enc.encode('rahle-parca:' + ad + ':' + i) }, anahtar, u.slice(12));
+      }).then(function (acik) {
+        parcalar[i] = acik; bitti++;
+        if (ilerleme) ilerleme(bitti, d.parcalar.length);
+      });
+    })).then(function () {
+      var akis = new Blob(parcalar).stream().pipeThrough(new DecompressionStream('gzip'));
+      return new Response(akis).text();
+    });
+  }
+
+  /* =========================================================
+     Ortak kayıt bağlantısı. İnce taneli GitHub erişim anahtarı (Contents RW: Rahle + yayın deposu) veri anahtarıyla
+     mühürlenir ve yayındaki kasa.json'a `ortak` alanı olarak GitHub API ile yazılır; giriş yapan her bilgisayar
+     kendiliğinden bağlanır. Yazılamazsa yalnız bu tarayıcıda (mühürlü) saklanır. Anahtar açık metin olarak hiçbir yere
+     yazılmaz. Rahle bu bağlantıyı window.parent.__rahleOrtak köprüsünden alır (aynı köken: blob iframe); eşitleme,
+     gösterge ve panel Rahle içindedir (parcalar/46_ortak-kayit.js). Birleştirme ve GitHub istemcisi ortak.js'tedir.
+     ========================================================= */
+  var O = window.RahleOrtak || null, bag = null, bagKaynak = '';
+  function bagKur(b, kaynak) { bag = b && b.token ? Object.assign({}, VARSAYILAN, b) : null; bagKaynak = bag ? kaynak : ''; }
+  function bagYukle() {
+    if (!O || !anahtar) { bagKur(null); return Promise.resolve(null); }
+    var kaynak = kasa && kasa.ortak ? muhurAc(kasa.ortak).then(function (b) { return { b: b, k: 'kasa' }; }) : Promise.reject();
+    return kaynak.catch(function () {
+      var y = null; try { y = localStorage.getItem(YEREL_BAG); } catch (e) {}
+      return y ? muhurAc(y).then(function (b) { return { b: b, k: 'yerel' }; }) : null;
+    }).catch(function () { return null; }).then(function (x) { bagKur(x && x.b, x && x.k); return bag; });
+  }
+  function depoYap(b, ad, dal) {
+    var p = ad.split('/');
+    return new O.Depo({ token: b.token, sahip: p[0], ad: p[1], dal: dal });
+  }
+  function utf8b64(t) { return b64Yap(enc.encode(t)); }
+  // Mühürlü bağlantı yayın deposundaki kasa.json'a yazılır (anahtarın yayın deposuna da Contents yazma izni olmalı).
+  function kasayaYaz(b, muhur) {
+    var y = depoYap(b, b.yayin);
+    return y.istek('GET', '/contents/kasa.json?ref=main').then(function (f) {
+      var k = JSON.parse(dec.decode(b64(f.content.replace(/\s+/g, ''))));
+      if (muhur) k.ortak = muhur; else delete k.ortak;
+      return y.istek('PUT', '/contents/kasa.json', { message: 'Ortak kayıt bağlantısı ' + (muhur ? 'güncellendi' : 'kaldırıldı'), content: utf8b64(JSON.stringify(k, null, 1) + '\n'), sha: f.sha, branch: 'main' });
+    }).then(function () { if (muhur) kasa.ortak = muhur; else delete kasa.ortak; });
+  }
+  function hataMetni(e, depo) {
+    if (e && e.durum === 401) return 'Anahtar geçersiz (süresi dolmuş ya da yanlış).';
+    if (e && (e.durum === 404 || e.durum === 403)) return 'Depoya erişilemedi: anahtarın ' + depo + ' deposuna Contents okuma/yazma izni olmalı.';
+    if (e && e.ag) return 'GitHub\'a ulaşılamadı (çevrim dışı?).';
+    return 'Bağlanılamadı: ' + (e && e.message || e);
+  }
+  window.__rahleOrtak = {
+    surum: 1,
+    lib: O,
+    kullanici: function () { return kullanici; },
+    // Bağlantı bilgisi (anahtarsız) ya da null
+    bag: function () { return bag ? { depo: bag.depo, dal: bag.dal, yayin: bag.yayin, kaynak: bagKaynak, kimlik: bag.depo + '#' + bag.dal } : null; },
+    depo: function () { return bag ? depoYap(bag, bag.depo, bag.dal) : null; },
+    // Anahtar sınanır, mühürlenir, kasaya (olmazsa yalnız bu tarayıcıya) yazılır → {uyari?}
+    baglan: function (token) {
+      token = String(token || '').trim();
+      if (!O || !anahtar) return Promise.reject(new Error('Ortak kayıt bu sayfada kullanılamıyor'));
+      if (!token) return Promise.reject(new Error('Erişim anahtarı boş'));
+      var aday = Object.assign({}, VARSAYILAN, { token: token });
+      var d = depoYap(aday, aday.depo, aday.dal);
+      return d.istek('GET', '').then(function () { return d.oku(null); }).catch(function (e) { throw new Error(hataMetni(e, aday.depo)); }).then(function () {
+        return muhurle(aday);
+      }).then(function (muhur) {
+        try { localStorage.setItem(YEREL_BAG, muhur); } catch (e) {}
+        bagKur(aday, 'yerel');
+        return kasayaYaz(aday, muhur).then(function () { bagKaynak = 'kasa'; return {}; }, function (e) {
+          return { uyari: 'Bağlantı yalnız bu tarayıcıya kaydedildi; yayına yazılamadı (' + (e && e.message || e) + '). Öteki bilgisayarlar için anahtarın ' + aday.yayin + ' deposuna da Contents yazma izni olmalı; ya da her bilgisayarda bir kez bağlanın.' };
+        });
+      });
+    },
+    // Bağlantı yayından ve bu tarayıcıdan kaldırılır (veri yerinde kalır)
+    kaldir: function () {
+      var b = bag;
+      try { localStorage.removeItem(YEREL_BAG); } catch (e) {}
+      bagKur(null);
+      if (!b || !kasa || !kasa.ortak) return Promise.resolve({});
+      return kasayaYaz(b, null).then(function () { return {}; }, function (e) { return { uyari: 'Bağlantı yayından kaldırılamadı (' + (e && e.message || e) + '); öteki bilgisayarlar bağlı kalabilir.' }; });
+    }
+  };
+
+  // Rahle kendi içinde #/… rotalarıyla gezinir; rota dış adrese yansıtılır ki yenileme ve bağlantı aynı ekranı açsın.
+  function rotaEsitle(f) {
+    var w; try { w = f.contentWindow; } catch (e) { return; }
+    if (!w) return;
+    var yansit = function () {
+      try { var h = w.location.hash; if (h !== location.hash) history.replaceState(null, '', h || location.pathname + location.search); } catch (e) {}
+    };
+    try { w.addEventListener('hashchange', yansit); } catch (e) {}
+    yansit();
+  }
+
+  function siteAc() {
+    durum('Site açılıyor…');
+    return Promise.all([dosyaAc('site', function (n, t) { if (t > 1) durum('Site indiriliyor… ' + n + '/' + t); }), bagYukle()]).then(function (x) {
+      var metin = x[0];
+      var url = URL.createObjectURL(new Blob([metin], { type: 'text/html;charset=utf-8' }));
+      var f = $('site');
+      f.addEventListener('load', function () {
+        rotaEsitle(f);
+        try { if (f.contentDocument && f.contentDocument.title) document.title = f.contentDocument.title; } catch (e) {}
+        try { f.contentWindow.focus(); } catch (e) {}
+      });
+      f.src = url + (location.hash || '');
+      f.style.display = 'block';
+      $('giris').style.display = 'none';
+    });
+  }
+
+  function hata(e) {
+    $('gir').disabled = false;
+    if (e && e.message === 'giris') durum('Kullanıcı adı veya şifre yanlış.', true);
+    else durum('Açılamadı: ' + (e && e.message || e), true);
+  }
+
+  $('form').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    $('gir').disabled = true;
+    durum('Şifre doğrulanıyor…');
+    kasaGetir().then(function () {
+      return yuvaAc($('kullanici').value, $('sifre').value);
+    }).then(function (s) {
+      // Oturum anahtarı yalnız bu sekme açıkken saklanır; sekme kapanınca silinir.
+      kullanici = s.ad;
+      try { sessionStorage.setItem(OTURUM, b64Yap(new Uint8Array(s.ham))); sessionStorage.setItem(OTURUM_AD, s.ad); } catch (e) {}
+      $('sifre').value = '';
+      return anahtarKur(s.ham);
+    }).then(siteAc).catch(hata);
+  });
+
+  // Aynı sekmede yeniden yüklemede şifre tekrar sorulmaz.
+  var kayit = null;
+  try { kayit = sessionStorage.getItem(OTURUM); kullanici = sessionStorage.getItem(OTURUM_AD) || kullanici; } catch (e) {}
+  if (kayit) {
+    $('gir').disabled = true;
+    durum('Oturum açılıyor…');
+    kasaGetir().then(function () { return anahtarKur(b64(kayit)); }).then(siteAc).catch(function () {
+      try { sessionStorage.removeItem(OTURUM); } catch (x) {}
+      $('gir').disabled = false; durum('');
+    });
+  }
+})();
+</script>
+</body>
+</html>

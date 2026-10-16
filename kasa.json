@@ -1,0 +1,21 @@
+{
+ "surum": "rahle-1c4a2ac",
+ "guncelleme": "2026-10-16T15:57:17+00:00",
+ "yuvalar": [
+  {
+   "kullanici": "Admin",
+   "salt": "Bnb2wJsUnZmMKFKnNJVsuw==",
+   "iter": 600000,
+   "w": "ypdOl988adhV4+FDC3nhxenqe3tNHvLl0XyYw7YFrQhbPCTVQX7jAMGxpu+yUpm7ovlQ1hepFCtkVGau"
+  }
+ ],
+ "dosyalar": {
+  "site": {
+   "ozet": "d07b5fbbb350183a0083d8dcf31d7d5765f26ba7e577e2c91db91862efc69fa1",
+   "boyut": 7071897,
+   "parcalar": [
+    "veri/site.d07b5fbbb350.0.bin"
+   ]
+  }
+ }
+}
