@@ -42,6 +42,14 @@ button:disabled { opacity: .6; cursor: progress; }
 #durum.hata { color: var(--bad); }
 .not { margin: 18px 0 0; font-size: 12px; color: var(--ink-2); }
 #site { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: none; background: var(--bg); }
+/* Kaynak paketi indirme göstergesi: yalnız indirme sürerken sayfanın üst kenarında 2 px'lik sakin çizgi; Rahle'nin
+   alttaki durum satırını örtmez, tıklamayı engellemez; boştayken hiç çizilmez (ayrıntılı ilerlemeyi Rahle kendi
+   'paket' olayıyla gösterir). */
+#paket-gosterge { display: none; position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 2; pointer-events: none; transition: opacity .4s ease; }
+#paket-gosterge.acik { display: block; }
+#paket-gosterge.bitti { opacity: 0; }
+#paket-gosterge i { display: block; height: 100%; width: 0; background: var(--accent); opacity: .55; transition: width .2s linear; }
+@media (prefers-reduced-motion: reduce) { #paket-gosterge, #paket-gosterge i { transition: none; } }
 </style>
 </head>
 <body>
@@ -59,6 +67,7 @@ button:disabled { opacity: .6; cursor: progress; }
   </form>
 </main>
 <iframe id="site" title="Rahle"></iframe>
+<div id="paket-gosterge" aria-hidden="true"><i></i></div>
 <script src="ortak.js"></script>
 <script>
 (function () {
@@ -205,12 +214,152 @@ button:disabled { opacity: .6; cursor: progress; }
   /* Yayındaki ek şifreli dosyalar (site dışındakiler; ör. 'okuma': araç okuması, parcalar/47_okuma.js). Rahle varlığını ve
      özetini window.parent.__rahleDosyaBilgi(ad) ile, açık metnini window.parent.__rahleDosya(ad) ile alır (aynı köken). */
   window.__rahleDosyaBilgi = function (ad) {
-    var d = ad !== 'site' && kasa && kasa.dosyalar && kasa.dosyalar[ad];
+    var d = ad !== 'site' && ad !== 'paket' && kasa && kasa.dosyalar && kasa.dosyalar[ad];
     return d && anahtar ? { ad: ad, ozet: d.ozet, boyut: d.boyut } : null;
   };
   window.__rahleDosya = function (ad) {
     if (!window.__rahleDosyaBilgi(ad)) return Promise.reject(new Error('yayında ' + ad + ' dosyası yok'));
     return dosyaAc(ad);
+  };
+
+  /* =========================================================
+     Kaynak paketi köprüsü (KAYNAK_PAKETI_TASARIM §2.4, §5.2). Paket belge başına ayrı şifreli dosyadır
+     (kasa.dosyalar.paket[belgeId] = {ozet, boyut, parcalar}; yayinla.py). Rahle (aynı köken: blob iframe):
+       window.parent.__rahlePaketListe()                        → Promise<null | {surum: 1, manifest}>
+       window.parent.__rahlePaket(belgeId, {ilerleme, sinyal})  → Promise<Uint8Array>  (gzip; şifresi çözülmüş, açılmamış)
+     Hata: Error & {kod: 'yok' | 'ag' | 'butunluk' | 'iptal'}. Köprü önbellek tutmaz (Rahle kendi deposunda saklar);
+     oturum açılırken hiçbir şey indirilmez. Bellek: belgeler sırayla, tek seferde tek belge indirilip çözülür
+     (Rahle'nin en çok iki isteği kuyrukta bekler); bitince baytlar Rahle'ye geçer, burada tutulmaz.
+     ========================================================= */
+  var PAKET_ILETI = {
+    yok: 'Bu belge yayındaki pakette yok.',
+    ag: 'Belge indirilemedi: bağlantı yok (çevrim dışı?).',
+    butunluk: 'İndirilen belge çözülemedi; yayın bozuk olabilir. Yeniden deneyin; sürerse yayını yenileyin.',
+    iptal: 'İndirme durduruldu.'
+  };
+  function paketHatasi(kod, ek) { var e = new Error(PAKET_ILETI[kod] + (ek ? ' (' + ek + ')' : '')); e.kod = kod; return e; }
+  function paketGirdi(id) {
+    var p = kasa && kasa.dosyalar && kasa.dosyalar.paket;
+    return anahtar && p && typeof id === 'string' && Object.prototype.hasOwnProperty.call(p, id) && p[id] && p[id].parcalar ? p[id] : null;
+  }
+  // Sakin gösterge: indirilen belgelerin toplamına göre üst kenarda ince çizgi.
+  var gosterge = { alinan: 0, toplam: 0, zaman: 0 };
+  function gostergeCiz(bitti) {
+    var g = $('paket-gosterge'); if (!g) return;
+    clearTimeout(gosterge.zaman);
+    if (bitti) {
+      if (g.className !== 'acik') return;
+      g.firstChild.style.width = '100%';
+      gosterge.zaman = setTimeout(function () {
+        g.className = 'acik bitti';
+        gosterge.zaman = setTimeout(function () { g.className = ''; g.firstChild.style.width = '0'; }, 450);
+      }, 250);
+      return;
+    }
+    g.className = 'acik';
+    g.firstChild.style.width = (gosterge.toplam ? Math.min(100, 100 * gosterge.alinan / gosterge.toplam) : 0).toFixed(1) + '%';
+  }
+  // Bir şifreli parça akışla indirilir (bayt sayılır), sonra çözülür → ArrayBuffer (açık gzip dilimi).
+  function parcaGetir(ad, i, yol, ctl, say) {
+    return fetch(yol, { signal: ctl.signal }).catch(function (e) {
+      throw ctl.signal.aborted ? paketHatasi('iptal') : paketHatasi('ag');
+    }).then(function (r) {
+      if (!r.ok) throw paketHatasi('ag', 'HTTP ' + r.status);
+      if (!r.body || !r.body.getReader) return r.arrayBuffer().then(function (b) { say(b.byteLength); return new Uint8Array(b); });
+      var okuyucu = r.body.getReader(), dilimler = [], uz = 0;
+      var oku = function () {
+        if (ctl.signal.aborted) { try { okuyucu.cancel(); } catch (e) {} throw paketHatasi('iptal'); }
+        return okuyucu.read().then(function (x) {
+          if (x.done) {
+            if (dilimler.length === 1) return dilimler[0];
+            var u = new Uint8Array(uz), o = 0;
+            for (var k = 0; k < dilimler.length; k++) { u.set(dilimler[k], o); o += dilimler[k].length; }
+            dilimler = null; return u;
+          }
+          dilimler.push(x.value); uz += x.value.length; say(x.value.length);
+          return oku();
+        });
+      };
+      return oku().catch(function (e) { throw e && e.kod ? e : ctl.signal.aborted ? paketHatasi('iptal') : paketHatasi('ag'); });
+    }).then(function (u) {
+      if (u.length < 29) throw paketHatasi('butunluk');
+      return crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.subarray(0, 12), additionalData: enc.encode('rahle-parca:' + ad + ':' + i) }, anahtar, u.subarray(12))
+        .catch(function () { throw paketHatasi('butunluk'); });
+    });
+  }
+  // paketAc: belgenin parçaları sırayla indirilir, çözülür ve birleştirilir → Uint8Array (gzip, açılmadan).
+  function paketAc(id, o) {
+    o = o || {};
+    var d = paketGirdi(id);
+    if (!d) return Promise.reject(paketHatasi('yok'));
+    var ad = 'paket.' + id, toplam = d.boyut + 28 * d.parcalar.length, alinan = 0, ctl = new AbortController();
+    var sinyal = o.sinyal, dinle = function () { ctl.abort(); };
+    if (sinyal) { if (sinyal.aborted) return Promise.reject(paketHatasi('iptal')); sinyal.addEventListener('abort', dinle); }
+    var sessiz = !!o.sessiz;
+    if (!sessiz) gosterge.toplam += toplam;
+    var say = function (n) {
+      alinan += n;
+      if (!sessiz) { gosterge.alinan += n; gostergeCiz(); }
+      if (o.ilerleme) try { o.ilerleme(Math.min(alinan, toplam), toplam); } catch (e) {}
+    };
+    var acik = [], i = 0;
+    var sonraki = function () {
+      if (i >= d.parcalar.length) return;
+      var k = i++;
+      return parcaGetir(ad, k, d.parcalar[k], ctl, say).then(function (b) { acik[k] = b; return sonraki(); });
+    };
+    var bitir = function () {
+      if (sinyal) sinyal.removeEventListener('abort', dinle);
+      if (sessiz) return;
+      gosterge.alinan += toplam - alinan; alinan = toplam;   // yarım kalan indirme de göstergeden düşer
+      if (gosterge.alinan >= gosterge.toplam) { gosterge.alinan = gosterge.toplam = 0; gostergeCiz(true); } else gostergeCiz();
+    };
+    return Promise.resolve().then(sonraki).then(function () {
+      bitir();
+      if (acik.length === 1) return new Uint8Array(acik[0]);
+      var n = 0, k; for (k = 0; k < acik.length; k++) n += acik[k].byteLength;
+      var u = new Uint8Array(n), o2 = 0;
+      for (k = 0; k < acik.length; k++) { u.set(new Uint8Array(acik[k]), o2); o2 += acik[k].byteLength; acik[k] = null; }
+      return u;
+    }, function (e) { bitir(); throw e && e.kod ? e : paketHatasi('ag'); });
+  }
+  // Basit kuyruk: tek seferde tek belge (bellekte en çok bir belgenin şifreli + açık baytları). Kuyrukta beklerken
+  // durdurulan istek hemen 'iptal' ile döner ve sırası gelince atlanır.
+  var paketKuyruk = Promise.resolve();
+  function sirayla(is, sinyal) {
+    return new Promise(function (ok, red) {
+      var basladi = false, dinle = function () { if (!basladi) red(paketHatasi('iptal')); };
+      if (sinyal) sinyal.addEventListener('abort', dinle);
+      var calis = function () {
+        if (sinyal) sinyal.removeEventListener('abort', dinle);
+        if (sinyal && sinyal.aborted) return red(paketHatasi('iptal'));
+        basladi = true;
+        var p = is(); p.then(ok, red); return p.then(function () {}, function () {});
+      };
+      paketKuyruk = paketKuyruk.then(calis, calis);
+    });
+  }
+  var manifestSoz = null;
+  window.__rahlePaketSurum = 1;
+  window.__rahlePaketListe = function () {
+    if (!paketGirdi('manifest')) return Promise.resolve(null);
+    if (!manifestSoz) {
+      manifestSoz = paketAc('manifest', { sessiz: true }).then(function (u) {
+        var akis = new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'));
+        return new Response(akis).text().catch(function () { throw paketHatasi('butunluk'); });
+      }).then(function (t) {
+        var m; try { m = JSON.parse(t); } catch (e) { throw paketHatasi('butunluk'); }
+        return { surum: 1, manifest: m };
+      });
+      manifestSoz.catch(function () { manifestSoz = null; });   // hata kalıcı tutulmaz: sonraki çağrı yeniden dener
+    }
+    return manifestSoz;
+  };
+  window.__rahlePaket = function (belgeId, o) {
+    o = o || {};
+    if (belgeId === 'manifest' || !paketGirdi(belgeId)) return Promise.reject(paketHatasi('yok'));
+    if (o.sinyal && o.sinyal.aborted) return Promise.reject(paketHatasi('iptal'));
+    return sirayla(function () { return paketAc(belgeId, o); }, o.sinyal);
   };
 
   // Rahle kendi içinde #/… rotalarıyla gezinir; rota dış adrese yansıtılır ki yenileme ve bağlantı aynı ekranı açsın.
