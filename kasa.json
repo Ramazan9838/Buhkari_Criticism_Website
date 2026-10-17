@@ -1,6 +1,6 @@
 {
- "surum": "rahle-20ad732",
- "guncelleme": "2026-10-17T05:01:59+00:00",
+ "surum": "rahle-83fd218",
+ "guncelleme": "2026-10-17T09:30:40+00:00",
  "yuvalar": [
   {
    "kullanici": "Admin",
@@ -11,10 +11,10 @@
  ],
  "dosyalar": {
   "site": {
-   "ozet": "7e6602f52400d308e561a47f79582e3b428f5f361201a7cf3bbe8d5da2a70f0f",
-   "boyut": 7099014,
+   "ozet": "ff8e263240081c516872d8fbdbb6fa7ab4f3c9a5d687b993e999319092eb2707",
+   "boyut": 7434443,
    "parcalar": [
-    "veri/site.7e6602f52400.0.bin"
+    "veri/site.ff8e26324008.0.bin"
    ]
   },
   "okuma": {
