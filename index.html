@@ -632,7 +632,7 @@ button:disabled { opacity: .6; cursor: progress; }
         return btn;
       }
       function tamMetindeYeniFis(belge, pid) {
-        if (app.oku.yeniFisParagraf) return app.oku.yeniFisParagraf(belge, pid);
+        if (app.oku.yeniFisParagraf && app.oku.yeniFisParagraf !== tamMetindeYeniFis) return app.oku.yeniFisParagraf(belge, pid);
         if (!app.state || app.state.ekran !== 'okuTam') { app.durum('Bu işlemi Tam metin okumasında açın.'); return; }
         var oz = app.paket.belge(belge);
         if (!oz || oz.tur === 'metin' || oz.tur === 'mukaddime' || !oz.sarih) { app.durum('Bu kaynaktan fiş açılamaz.'); return; }
