@@ -459,20 +459,49 @@ button:disabled { opacity: .6; cursor: progress; }
     } catch (e) { console.warn('[okuma] genişlik uygulanamadı:', e); }
   }
 
+  // Şifreli yayında, kaynak paketini yeniden oluşturmadan Oku ana sayfasını yönlendir.
+  // Eski kaynak HTML'deki masaüstü/mobil linkler ve çıplak #/oku geçişleri bu köprüyle düzelir.
+  function okuAnaSayfa(f) {
+    try {
+      var w = f.contentWindow, doc = f.contentDocument, app = w && w.App;
+      if (!doc || !app) return;
+      var linkler = doc.querySelectorAll('#ray a[data-alan="oku"], #altcubuk a[data-alan="oku"]');
+      for (var i = 0; i < linkler.length; i++) linkler[i].setAttribute('href', '#/oku/hadis');
+      var ekran = app.ekranlar && app.ekranlar.oku;
+      if (ekran && !ekran.__hadisAnaSayfa && typeof ekran.render === 'function') {
+        var asilRender = ekran.render;
+        ekran.render = function (kok, ctx) {
+          if (!ctx.params.sarih) {
+            Promise.resolve().then(function () {
+              if (app.state.ekran === 'oku' && kok.isConnected) app.go('#/oku/hadis', { degistir: true });
+            });
+            return;
+          }
+          return asilRender(kok, ctx);
+        };
+        ekran.__hadisAnaSayfa = true;
+      }
+    } catch (e) { console.warn('[oku] ana sayfa yönlendirmesi kurulamadı:', e); }
+  }
+
   function siteAc() {
     durum('Site açılıyor…');
     return Promise.all([dosyaAc('site', function (n, t) { if (t > 1) durum('Site indiriliyor… ' + n + '/' + t); }), bagYukle()]).then(function (x) {
       var metin = x[0];
+      // Eski #/oku yer imleri artık yeni ana sayfa olan Hadise göre'ye gider.
+      var ilkRota = location.hash === '#/oku' ? '#/oku/hadis' : (location.hash || '');
+      if (location.hash === '#/oku') try { history.replaceState(history.state, '', ilkRota); } catch (e) {}
       var url = URL.createObjectURL(new Blob([metin], { type: 'text/html;charset=utf-8' }));
       var f = $('site');
       f.addEventListener('load', function () {
         rotaEsitle(f);
+        okuAnaSayfa(f);
         temaKisayolu(f);
         okumaGenisligi(f);
         try { if (f.contentDocument && f.contentDocument.title) document.title = f.contentDocument.title; } catch (e) {}
         try { f.contentWindow.focus(); } catch (e) {}
       });
-      f.src = url + (location.hash || '');
+      f.src = url + ilkRota;
       f.style.display = 'block';
       $('giris').style.display = 'none';
     });
