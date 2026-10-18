@@ -453,7 +453,7 @@ button:disabled { opacity: .6; cursor: progress; }
       if (!doc || !doc.head || doc.getElementById('rahle-okuma-genislik')) return;
       var stil = doc.createElement('style');
       stil.id = 'rahle-okuma-genislik';
-      stil.textContent = "@media screen and (min-width: 900px) { .r-ekran.r-ekran--metin.r-oku-paket:has(.r-oku-tm-sutun) { --r-kenar: 16px; max-width: min(1040px, calc(100% - 2 * var(--r-centik-w))); } }";
+      stil.textContent = "@media screen and (min-width: 900px) { .r-ekran.r-ekran--metin:not(.r-oku--bos) { --r-kenar: 16px; max-width: min(1040px, calc(100% - 2 * var(--r-centik-w))); } }";
       doc.head.appendChild(stil);
     } catch (e) { console.warn('[okuma] genişlik uygulanamadı:', e); }
   }
