@@ -725,6 +725,89 @@ button:disabled { opacity: .6; cursor: progress; }
     } catch (e) { console.warn('[fisleme] kolaylıklar eklenemedi:', e); }
   }
 
+  /* Source: parcalar/48_kutuphane.js; şifreli yayının mevcut sürümü için köprü. */
+  function rahleKutuphaneKur(app,w,doc) {
+'use strict';
+if (!app || !app.paket || app.kutuphane || !doc || !doc.body) return;
+const pk=app.paket, key='rahle.kutuphane.duraklat';
+const mobile=typeof app.mobil==='function' && app.mobil();
+let mode='bekliyor',phase='',done=0,total=0,progress=0,error='',controller=null,promise=null,hidden=false,hideTimer=null;
+function paused(){try{return w.localStorage.getItem(key)==='1'}catch(e){return false}}
+function pauseStore(v){try{if(v)w.localStorage.setItem(key,'1');else w.localStorage.removeItem(key)}catch(e){}}
+const style=doc.createElement('style');style.id='rahle-kutuphane-stil';
+style.textContent='#rahle-kutuphane-panel{position:fixed;left:max(10px,var(--r-ray-w,0px));bottom:calc(var(--r-durum-h,22px) + 10px);width:min(340px,calc(100vw - 24px));padding:10px 12px;background:var(--r-yuzey);color:var(--r-murekkep);border:1px solid var(--r-cizgi);border-radius:8px;box-shadow:var(--r-golge);z-index:var(--r-z-yapisik,50);font-size:12px;display:grid;gap:8px}#rahle-kutuphane-panel[hidden]{display:none!important}#rahle-kutuphane-panel .bar{height:4px;background:var(--r-cizgi);border-radius:8px;overflow:hidden}#rahle-kutuphane-panel .bar i{height:100%;width:0;display:block;background:var(--r-vurgu)}#rahle-kutuphane-panel .actions{display:flex;gap:8px;align-items:center}#rahle-kutuphane-panel .status{color:var(--r-soluk);overflow-wrap:anywhere}@media(max-width:700px){#rahle-kutuphane-panel{left:10px;bottom:calc(var(--r-durum-h,22px) + 65px)}}';
+doc.head.appendChild(style);
+const box=doc.createElement('aside');box.id='rahle-kutuphane-panel';box.setAttribute('aria-label','Kaynak kütüphanesi hazırlığı');
+const title=doc.createElement('strong');title.textContent='Kaynak kütüphanesi';
+const status=doc.createElement('div');status.className='status';status.setAttribute('role','status');
+const bar=doc.createElement('div');bar.className='bar';bar.setAttribute('role','progressbar');bar.setAttribute('aria-label','Kütüphane hazırlığı');bar.setAttribute('aria-valuemin','0');bar.setAttribute('aria-valuemax','100');
+const fill=doc.createElement('i');bar.appendChild(fill);
+const actions=doc.createElement('div');actions.className='actions';
+const button=doc.createElement('button');button.type='button';button.className='r-dugme r-dugme--hayalet r-dugme--kucuk';
+const dismiss=doc.createElement('button');dismiss.type='button';dismiss.className=button.className;dismiss.textContent='Gizle';
+actions.append(button,dismiss);box.append(title,status,bar,actions);doc.body.appendChild(box);
+function refresh() {
+  let text=mobile?'Kaynakları indirmek için başlatın (yaklaşık 72 MB).':'Kaynaklar hazırlanmayı bekliyor.';
+  if(mode==='calisiyor')text=phase+' · '+done+'/'+total+(progress?' · %'+Math.floor(progress*100):'');
+  if(mode==='durdu')text='Hazırlama duraklatıldı; tamamlanan dosyalar korunuyor.';
+  if(mode==='hata')text='Hazırlama durdu: '+error+'. İndirilen dosyalar korunuyor.';
+  if(mode==='tamam')text='16 metin, hadis dizini ve arama dizinleri hazır.';
+  status.textContent=text;
+  const pct=mode==='tamam'?100:total?Math.max(0,Math.min(100,Math.floor(100*(done+progress)/total))):0;
+  fill.style.width=pct+'%';bar.setAttribute('aria-valuenow',String(pct));
+  button.textContent=mode==='calisiyor'?'Duraklat':mode==='tamam'?'Hazır':mode==='hata'?'Yeniden dene':'İndir ve hazırla';
+  button.disabled=mode==='tamam';
+  box.hidden=hidden || mode==='bekliyor' && !mobile && !paused();
+  if(mode==='tamam') {w.clearTimeout(hideTimer);hideTimer=w.setTimeout(()=>{if(mode==='tamam'){hidden=true;box.hidden=true}},7000)}
+}
+async function prepare() {
+  await pk.kesfet();
+  if(pk.durum().bellekKipi)throw new Error('Tarayıcı verileri kalıcı saklayamıyor. Sistem › Kaynak bölümünü kontrol edin');
+  const src=pk.kaynaklar.yayin()||pk.kaynaklar.sunucu();
+  if(!src)throw new Error('İndirme kaynağı bulunamadı');
+  const man=await src.liste();
+  if(!man||!Array.isArray(man.belgeler)||!man.belgeler.length)throw new Error('Kaynak manifesti bulunamadı');
+  const docs=man.belgeler.slice(), all=docs.slice();
+  if(man.hadisDizini)all.unshift(Object.assign({id:'hadis_dizini'},man.hadisDizini));
+  all.sort((a,b)=>((a.id==='SRC-BHR-SLT'?-2:a.id==='hadis_dizini'?-1:0)-(b.id==='SRC-BHR-SLT'?-2:b.id==='hadis_dizini'?-1:0)));
+  total=all.length;done=0;progress=0;phase='Kaynaklar indiriliyor';refresh();
+  for(const g of all){
+    if(controller.signal.aborted)throw Object.assign(new Error('Duraklatıldı'),{name:'AbortError'});
+    const cache=pk._ic&&pk._ic.YEREL&&pk._ic.YEREL.get(g.id);
+    if(!cache||cache.sha256!==g.sha256){
+      const result=await pk.yukle(src,{belgeler:[g.id],sinyal:controller.signal,ilerleme:o=>{progress=Math.max(0,Math.min(1,o.oran||0));refresh()}});
+      if(result.hatali&&result.hatali.length)throw new Error(result.hatali.map(x=>x.id+': '+x.neden).join('; '));
+    }
+    done++;progress=0;refresh();
+  }
+  await pk.hadisDizini();
+  phase='Arama dizinleri hazırlanıyor';done=0;total=docs.length;refresh();
+  await pk.aramaHazirla({belgeler:docs.map(x=>x.id),sinyal:controller.signal,ilerleme:o=>{
+    done=Math.max(0,Number(o.bitti)||0);progress=Math.max(0,Math.min(1,total*(o.oran||0)-done));refresh();
+  }});
+  const result=pk.durum();
+  if(result.yerel<docs.length||result.aramaHazir<docs.length||result.hadisDizini!=='yerel')throw new Error('Bazı kaynaklar hazır değil; Sistem › Kaynak bölümünden denetleyin');
+  mode='tamam';done=total;progress=0;refresh();
+}
+function start(){
+  if(promise)return promise;
+  pauseStore(false);hidden=false;w.clearTimeout(hideTimer);
+  controller=new w.AbortController();mode='calisiyor';error='';done=0;total=0;progress=0;refresh();
+  promise=prepare().catch(e=>{
+    mode=(controller&&controller.signal.aborted)||(e&&(e.name==='AbortError'||e.kod==='iptal'))?'durdu':'hata';
+    error=e&&e.message||String(e);refresh();
+  }).finally(()=>{promise=null;controller=null});
+  return promise;
+}
+function stop(){pauseStore(true);if(controller)controller.abort();mode='durdu';refresh()}
+button.addEventListener('click',()=>{if(mode==='calisiyor')stop();else start()});
+dismiss.addEventListener('click',()=>{hidden=true;box.hidden=true});
+app.kutuphane={basla:start,durdur:stop,durum:()=>({durum:mode,asama:phase,biten:done,toplam:total,hata:error}),goster:()=>{hidden=false;refresh()}};
+if(paused()){mode='durdu';refresh()}
+else if(mobile)refresh();
+else w.setTimeout(()=>{if(box.isConnected&&mode==='bekliyor')start()},1600);
+}
+
   function siteAc() {
     durum('Site açılıyor…');
     return Promise.all([dosyaAc('site', function (n, t) { if (t > 1) durum('Site indiriliyor… ' + n + '/' + t); }), bagYukle()]).then(function (x) {
@@ -741,6 +824,7 @@ button:disabled { opacity: .6; cursor: progress; }
         okumaGenisligi(f);
         hadisGorunumu(f);
         fislemeKolayligi(f);
+        try { rahleKutuphaneKur(f.contentWindow.App, f.contentWindow, f.contentDocument); } catch (e) { console.warn('[kutuphane] başlatılamadı', e); }
         try { if (f.contentDocument && f.contentDocument.title) document.title = f.contentDocument.title; } catch (e) {}
         try { f.contentWindow.focus(); } catch (e) {}
       });
