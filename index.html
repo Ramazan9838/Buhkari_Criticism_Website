@@ -484,6 +484,131 @@ button:disabled { opacity: .6; cursor: progress; }
     } catch (e) { console.warn('[oku] ana sayfa yönlendirmesi kurulamadı:', e); }
   }
 
+
+  /* Şifreli yayın için Hadise göre iyileştirmeleri: ana metin ve bağımsız şerh aç/kapat.
+     Kaynak HTML yeniden şifrelendiğinde aynı iyileştirmeler parcalar/41_oku-hadis.js içindedir. */
+  function hadisGorunumu(f) {
+    try {
+      var w = f.contentWindow, doc = f.contentDocument, app = w && w.App;
+      if (!app || !doc || !app.paket || typeof app.paket.hadis !== 'function') return;
+      var pk = app.paket, anaId = 'SRC-BHR-SLT';
+      if (pk.__rahleHadisGorunumu) return;
+      pk.__rahleHadisGorunumu = true;
+      var bekleyen = null, sonHata = '', sonKart = null;
+      function anaHazirla() {
+        if (bekleyen) return bekleyen;
+        bekleyen = (async function () {
+          await pk.hadisDizini();
+          var belge = pk.belge(anaId);
+          if (belge && belge.yerel) { sonHata = ''; return true; }
+          if (!belge || !belge.uzakta) throw new Error('Buhârî ana metni yayın paketinde bulunamadı.');
+          var kaynak = pk.kaynaklar.yayin() || pk.kaynaklar.sunucu();
+          if (!kaynak) throw new Error('İndirme kaynağına ulaşılamadı.');
+          if (typeof app.durum === 'function') app.durum('Buhârî ana metni indiriliyor…');
+          var sonuc = await pk.yukle(kaynak, { belgeler: [anaId] });
+          if (sonuc.hatali && sonuc.hatali.length) throw new Error(sonuc.hatali[0].neden || 'İndirme başarısız.');
+          if (!(pk.belge(anaId) || {}).yerel) throw new Error('İndirme tamamlanamadı.');
+          sonHata = '';
+          return true;
+        })().catch(function (e) {
+          sonHata = e && e.message || String(e);
+          if (typeof app.durum === 'function') app.durum('Buhârî ana metni: ' + sonHata);
+          return false;
+        }).finally(function () { bekleyen = null; });
+        return bekleyen;
+      }
+      var asilHadis = pk.hadis;
+      pk.hadis = async function (no, opts) {
+        await anaHazirla();
+        var sonuc = await asilHadis.call(pk, no, opts);
+        sonKart = sonuc;
+        return sonuc;
+      };
+
+      var stil = doc.createElement('style');
+      stil.id = 'rahle-hadis-serh-katla';
+      stil.textContent = '.r-oku-hd-bolum__icerik { display:grid; grid-template-columns:minmax(0,1fr); gap:var(--r-s8); min-width:0; }.r-oku-hd-bolum__icerik[hidden] {display:none!important;}.r-oku-hd-katla {margin-inline-start:auto;white-space:nowrap;}';
+      doc.head.appendChild(stil);
+
+      var kayit = [];
+      try { kayit = app.store.get('oku.kapaliSerhler', []); } catch (e) {}
+      var kapali = new Set(Array.isArray(kayit) ? kayit : []);
+      function sharihDugmesi(sec) {
+        var bas = sec.querySelector('.r-oku-hd-bolum__bas');
+        if (!bas || bas.querySelector('.r-oku-hd-katla')) return;
+        var belge = sec.getAttribute('data-belge'), icerik = doc.createElement('div');
+        icerik.className = 'r-oku-hd-bolum__icerik';
+        icerik.id = 'hd-icerik-' + belge;
+        while (bas.nextSibling) icerik.appendChild(bas.nextSibling);
+        sec.appendChild(icerik);
+        var dug = doc.createElement('button');
+        dug.type = 'button';
+        dug.className = 'r-dugme r-dugme--hayalet r-dugme--kucuk r-oku-hd-katla';
+        dug.setAttribute('aria-controls', icerik.id);
+        function yenile() {
+          var k = kapali.has(belge);
+          icerik.hidden = k;
+          dug.textContent = k ? '▸ Aç' : '▾ Kapat';
+          dug.setAttribute('aria-expanded', String(!k));
+          dug.setAttribute('aria-label', (sec.getAttribute('aria-label') || 'Şerh') + (k ? ' metnini aç' : ' metnini kapat'));
+        }
+        dug.addEventListener('click', function () {
+          if (kapali.has(belge)) kapali.delete(belge); else kapali.add(belge);
+          yenile();
+          try { app.store.set('oku.kapaliSerhler', Array.from(kapali)); } catch (e) {}
+        });
+        bas.appendChild(dug);
+        yenile();
+      }
+      async function metinUyarisi() {
+        var kutu = doc.querySelector('.r-oku-hd-metin .r-bos');
+        if (!kutu || !kutu.isConnected || !kutu.textContent.includes('dizinde yok')) return;
+        var belge = pk.belge(anaId), no = sonKart && sonKart.no;
+        var dz;
+        try { dz = await pk.hadisDizini(); } catch (e) {}
+        if (!kutu.isConnected || !kutu.textContent.includes('dizinde yok')) return;
+        kutu.textContent = !belge || !belge.yerel ? 'Buhârî ana metni henüz bu tarayıcıda hazır değil.' + (sonHata ? ' ' + sonHata : '') :
+          dz && no && !dz.kayit(anaId, no) ? 'Bu hadis numarasının Buhârî ana metnindeki yeri henüz eşleştirilmemiş.' :
+          'Ana metinde hadis kaydı bulunmasına rağmen metin açılamadı. Kaynak dosyasını denetleyin.';
+        if (!belge || !belge.yerel) {
+          var d = doc.createElement('button');
+          d.type = 'button'; d.className = 'r-dugme r-dugme--kucuk';
+          d.textContent = 'Ana metni indir / yeniden dene';
+          d.addEventListener('click', async function () {
+            d.disabled = true;
+            await anaHazirla();
+            if (w.location.hash.startsWith('#/oku/hadis')) app.go(w.location.hash, { yenile: true });
+          });
+          kutu.appendChild(doc.createTextNode(' ')); kutu.appendChild(d);
+        }
+      }
+      function gorunumuGuncelle() {
+        var bolumler = doc.querySelectorAll('.r-oku-hd-bolum[data-belge]');
+        for (var i = 0; i < bolumler.length; i++) sharihDugmesi(bolumler[i]);
+        var cipler = doc.querySelectorAll('.r-oku-hd-cip[data-belge]');
+        for (var j = 0; j < cipler.length; j++) if (!cipler[j].dataset.katlaDinle) {
+          cipler[j].dataset.katlaDinle = '1';
+          cipler[j].addEventListener('click', function () {
+            var id = this.getAttribute('data-belge'), bolum = doc.getElementById('hd-b-' + id);
+            if (!bolum) return;
+            var dug = bolum.querySelector('.r-oku-hd-katla[aria-expanded="false"]');
+            if (dug) dug.click();
+          }, true);
+        }
+        metinUyarisi().catch(function (e) { console.warn('[hadis] metin bildirimi', e); });
+      }
+      if (typeof app.on === 'function') app.on('oku:hadisCizildi', gorunumuGuncelle);
+      gorunumuGuncelle();
+      if (w.location.hash.startsWith('#/oku/hadis')) {
+        // İlk kart açılmış olsa bile Buhârî ana metninin bir kere hazırlamasını sağla.
+        anaHazirla().then(function (ok) {
+          if (ok && w.location.hash.startsWith('#/oku/hadis') && doc.querySelector('.r-oku-hd-metin .r-bos'))
+            app.go(w.location.hash, { yenile: true });
+        });
+      }
+    } catch (e) { console.warn('[hadis] görünüm kurulamadı:', e); }
+  }
+
   function siteAc() {
     durum('Site açılıyor…');
     return Promise.all([dosyaAc('site', function (n, t) { if (t > 1) durum('Site indiriliyor… ' + n + '/' + t); }), bagYukle()]).then(function (x) {
@@ -498,6 +623,7 @@ button:disabled { opacity: .6; cursor: progress; }
         okuAnaSayfa(f);
         temaKisayolu(f);
         okumaGenisligi(f);
+        hadisGorunumu(f);
         try { if (f.contentDocument && f.contentDocument.title) document.title = f.contentDocument.title; } catch (e) {}
         try { f.contentWindow.focus(); } catch (e) {}
       });
