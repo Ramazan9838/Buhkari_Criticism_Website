@@ -445,6 +445,19 @@ button:disabled { opacity: .6; cursor: progress; }
     } catch (e) { console.warn('[tema] kısayol eklenemedi:', e); }
   }
 
+  /* Yayınlanan şifreli site yeniden derlenene kadar aynı okuma genişliğini de uygula.
+     Yalnız CSS eklenir; kaynak paketine, fişlere ve ortak kayda dokunulmaz. */
+  function okumaGenisligi(f) {
+    try {
+      var doc = f.contentDocument;
+      if (!doc || !doc.head || doc.getElementById('rahle-okuma-genislik')) return;
+      var stil = doc.createElement('style');
+      stil.id = 'rahle-okuma-genislik';
+      stil.textContent = "@media screen and (min-width: 900px) { .r-ekran.r-ekran--metin.r-oku-paket:has(.r-oku-tm-sutun) { --r-kenar: 16px; max-width: min(1040px, calc(100% - 2 * var(--r-centik-w))); } }";
+      doc.head.appendChild(stil);
+    } catch (e) { console.warn('[okuma] genişlik uygulanamadı:', e); }
+  }
+
   function siteAc() {
     durum('Site açılıyor…');
     return Promise.all([dosyaAc('site', function (n, t) { if (t > 1) durum('Site indiriliyor… ' + n + '/' + t); }), bagYukle()]).then(function (x) {
@@ -454,6 +467,7 @@ button:disabled { opacity: .6; cursor: progress; }
       f.addEventListener('load', function () {
         rotaEsitle(f);
         temaKisayolu(f);
+        okumaGenisligi(f);
         try { if (f.contentDocument && f.contentDocument.title) document.title = f.contentDocument.title; } catch (e) {}
         try { f.contentWindow.focus(); } catch (e) {}
       });
