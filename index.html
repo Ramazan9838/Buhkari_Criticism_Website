@@ -609,6 +609,122 @@ button:disabled { opacity: .6; cursor: progress; }
     } catch (e) { console.warn('[hadis] görünüm kurulamadı:', e); }
   }
 
+
+  /* Tam metin fişleme ve Fiş akışı başlığı: şifreli paketi yeniden üretmeden
+     eski uygulamanın ekrandaki kontrollerini kaynak koddaki yeni davranışa uyarla. */
+  function fislemeKolayligi(f) {
+    try {
+      var w = f.contentWindow, doc = f.contentDocument, app = w && w.App;
+      if (!w || !doc || !app || !app.paket || !app.oku || !app.cekmece) return;
+      if (doc.getElementById('rahle-fisleme-kolayligi')) return;
+      var stil = doc.createElement('style');
+      stil.id = 'rahle-fisleme-kolayligi';
+      stil.textContent =
+        '@media screen and (min-width: 900px) {.r-ekran[data-ekran="oku"] .r-oku-ust {position:sticky;top:0;right:auto;width:100%;margin:0 0 var(--r-s8);padding:var(--r-s4) 0;z-index:var(--r-z-yapisik);background:var(--r-kagit);border-bottom:1px solid var(--r-cizgi);align-content:start}.r-ekran[data-ekran="oku"] .r-oku-ust__satir {flex-wrap:nowrap}}' +
+        '.r-kimlik-paragraf__fis {display:grid;gap:var(--r-s4);padding-bottom:var(--r-s8)}.r-kimlik-paragraf__fis .r-dugme-grubu {justify-content:flex-start}.r-kimlik-paragraf__eylem {margin-block:var(--r-s8)}' +
+        '.r-oku-hap .r-oku-hap__ekle {min-width:34px;font-size:var(--r-b18);font-weight:600}';
+      doc.head.appendChild(stil);
+
+      function sinifDugmesi(etiket, action) {
+        var btn = doc.createElement('button');
+        btn.type = 'button'; btn.className = 'r-dugme r-dugme--hayalet r-dugme--kucuk';
+        btn.textContent = etiket; btn.addEventListener('click', action);
+        return btn;
+      }
+      function tamMetindeYeniFis(belge, pid) {
+        if (app.oku.yeniFisParagraf) return app.oku.yeniFisParagraf(belge, pid);
+        if (!app.state || app.state.ekran !== 'okuTam') { app.durum('Bu işlemi Tam metin okumasında açın.'); return; }
+        var oz = app.paket.belge(belge);
+        if (!oz || oz.tur === 'metin' || oz.tur === 'mukaddime' || !oz.sarih) { app.durum('Bu kaynaktan fiş açılamaz.'); return; }
+        if (app.yazilabilir && !app.yazilabilir()) { app.durum('Bu sekme salt okunur.'); return; }
+        app.paket.paragraf(belge, pid).then(function (p) {
+          if (!p || p.tur !== 'p') { app.durum('Paragraf bulunamadı.'); return; }
+          if (app.state.ekran !== 'okuTam') return;
+          var sarih = app.veri.sarih(oz.sarih) || {};
+          var cilt = Number(p.cilt) || 0, sayfa = Number(p.sayfa) || 0;
+          var k = { tur: 'paragraf', sarih: oz.sarih,
+            eser: sarih.eser || oz.eser || '', vefat: sarih.vefat || oz.vefat || '',
+            kitab: (p.kitab && p.kitab.ad) || '', bab: (p.bab && p.bab.ad) || '',
+            hadis: p.hadisNo == null ? '' : 'h. ' + p.hadisNo, buhariNo: '',
+            kaynak: cilt ? cilt + '/' + sayfa : 's. ' + sayfa,
+            nesir: '', konum: '', ar: p.metin || '',
+            belge: belge, pid: pid, kod: pid, kitabMetin: (p.kitab && p.kitab.ad) || '' };
+          if (app.cekmece.acik('kimlik')) app.cekmece.kapat('kimlik', { odakIade: false });
+          // Mevcut tezgâh yeni ID üretir; aynı paragrafta önceden fiş bulunması engel değildir.
+          app.oku.tezgah.ac(k);
+        }).catch(function (e) { app.durum('Yeni fiş açılamadı: ' + (e && e.message || e)); });
+      }
+      if (!app.oku.yeniFisParagraf) app.oku.yeniFisParagraf = tamMetindeYeniFis;
+
+      function dugmeYenile() {
+        if (!app.state || app.state.ekran !== 'okuTam') return;
+        var hap = doc.querySelector('.r-ekran[data-ekran="okuTam"] .r-oku-hap, .r-ekran[data-ekran="oku"] .r-oku-hap');
+        if (!hap) hap = doc.querySelector('.r-oku-paket .r-oku-hap');
+        if (!hap) return;
+        var btn = hap.querySelector('button');
+        if (!btn || btn.classList.contains('r-oku-hap__ekle')) return;
+        btn.classList.add('r-oku-hap__ekle');
+        btn.textContent = '+';
+        btn.setAttribute('aria-label', 'Seçili metinden yeni fiş aç');
+        btn.title = 'Seçili metinden yeni fiş aç (N)';
+      }
+      function fişKartiYenile() {
+        if (!app.state || app.state.ekran !== 'okuTam') return;
+        var kart = doc.querySelector('#cekmece-kimlik [data-y5-id="kimlik:paragraf"]');
+        var n = app.state.nesne;
+        if (!kart || !n || n.tur !== 'paragraf' || !n.id) return;
+        var ayir = n.id.indexOf('|');
+        if (ayir < 0) return;
+        var belge = n.id.slice(0, ayir), pid = n.id.slice(ayir + 1);
+        var oz = app.paket.belge(belge);
+        if (oz && oz.sarih && oz.tur !== 'metin' && oz.tur !== 'mukaddime' &&
+            (!app.yazilabilir || app.yazilabilir()) && !kart.parentNode.querySelector('.r-kimlik-paragraf__eylem')) {
+          var yeni = doc.createElement('div');
+          yeni.className = 'r-dugme-grubu r-kimlik-paragraf__eylem';
+          yeni.appendChild(sinifDugmesi('+ Bu pasajdan yeni fiş', function () { tamMetindeYeniFis(belge, pid); }));
+          // Bağlı fişler listesinden hemen önce görünür.
+          var ul = kart.parentNode.querySelector('.r-kimlik-liste');
+          var bolum = ul && ul.previousElementSibling;
+          if (bolum) bolum.insertAdjacentElement('afterend', yeni);
+          else kart.insertAdjacentElement('afterend', yeni);
+        }
+        var existing = kart.parentNode.querySelectorAll('[data-y5-id^="kimlik:pf:"]');
+        for (var i = 0; i < existing.length; i++) {
+          var el = existing[i], kod = el.getAttribute('data-y5-id').slice('kimlik:pf:'.length);
+          if (!kod || el.parentNode.classList.contains('r-kimlik-paragraf__fis')) continue;
+          var wrow = doc.createElement('div'), action = doc.createElement('div');
+          wrow.className = 'r-kimlik-paragraf__fis'; action.className = 'r-dugme-grubu';
+          el.parentNode.insertBefore(wrow, el);
+          wrow.appendChild(el);
+          action.appendChild(sinifDugmesi('Düzenle', (function (id) {
+            return function () { app.nesne({ tur: 'fis', id: id }); };
+          })(kod)));
+          var lnk = doc.createElement('a');
+          lnk.className = 'r-dugme r-dugme--hayalet r-dugme--kucuk';
+          lnk.href = '#/fis/' + encodeURIComponent(kod);
+          lnk.textContent = 'Fiş sayfası ›';
+          action.appendChild(lnk); wrow.appendChild(action);
+        }
+      }
+      var drawer = doc.getElementById('cekmece-kimlik');
+      if (drawer && w.MutationObserver) {
+        var workPending = false;
+        var observer = new w.MutationObserver(function () {
+          if (workPending) return;
+          workPending = true;
+          w.requestAnimationFrame(function () { workPending = false; fişKartiYenile(); });
+        });
+        observer.observe(drawer, { childList: true, subtree: true });
+      }
+      doc.addEventListener('selectionchange', function () { w.requestAnimationFrame(dugmeYenile); });
+      if (typeof app.on === 'function') {
+        app.on('ekran', function () { w.requestAnimationFrame(dugmeYenile); });
+      }
+      dugmeYenile();
+      fişKartiYenile();
+    } catch (e) { console.warn('[fisleme] kolaylıklar eklenemedi:', e); }
+  }
+
   function siteAc() {
     durum('Site açılıyor…');
     return Promise.all([dosyaAc('site', function (n, t) { if (t > 1) durum('Site indiriliyor… ' + n + '/' + t); }), bagYukle()]).then(function (x) {
@@ -624,6 +740,7 @@ button:disabled { opacity: .6; cursor: progress; }
         temaKisayolu(f);
         okumaGenisligi(f);
         hadisGorunumu(f);
+        fislemeKolayligi(f);
         try { if (f.contentDocument && f.contentDocument.title) document.title = f.contentDocument.title; } catch (e) {}
         try { f.contentWindow.focus(); } catch (e) {}
       });
