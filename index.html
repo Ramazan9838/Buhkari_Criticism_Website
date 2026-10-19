@@ -1072,6 +1072,179 @@ else if(mobile)refresh();
 else w.setTimeout(()=>{if(box.isConnected&&mode==='bekliyor')start()},1600);
 }
 
+  /* Şifreli canlı uygulamanın iframe'inde tek kaynaklı denetimi başlatır.
+     İframe içinde yerleşik modül varsa app.kaynakFisDenetimi kontrolü çift kurulumu önler. */
+  function kaynakFisDenetimi(f) {
+    var app = f && f.contentWindow && f.contentWindow.App;
+    var modul = window.RahleKaynakDenetimi;
+    if (!app || !modul || typeof modul.kur !== 'function') return;
+    modul.kur(app, f.contentWindow, f.contentDocument);
+  }
+  // Salt-okunur kaynak–fiş denetimi, tek kaynak dosyasından girişe gömülür.
+/* RAHLE — 49_kaynak-denetimi.js
+ * Salt-okunur Kaynak–Fiş Doğrulama Merkezi.
+ * Kayıtları, ortak depoyu, tarayıcı depolamasını veya kaynak paketlerini DEĞİŞTİRMEZ.
+ * Kaynakları indirmez; derin kontrol yalnız düğmeyle seçilen yerel belgeyi açar.
+ */
+(function(g) {
+'use strict';
+function sade(s) {
+  return String(s == null ? '' : s).normalize('NFKC')
+    .replace(/[أإآٱ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي')
+    .replace(/ؤ/g,'و').replace(/ئ/g,'ي')
+    .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g,'')
+    .replace(/[\s\u200c\u200d.,،؛;:!؟()[\]{}"«»'’–—\-/]+/g,'').toLowerCase();
+}
+function satirlar(fisler, bag, belge) {
+  const records=[], ident=new Map(), same=new Map();
+  for (const f of fisler || []) {
+    if (!f || !f.kod) continue;
+    const links=Array.isArray(bag(f.kod)) ? bag(f.kod) : [];
+    const rec={kod:f.kod,sarih:f.sarih||'',eser:f.eser||'',kaynak:f.kaynak||'',
+      durum:'bagli',bulgular:[],links:links.filter(Boolean).map(b=>({belge:b.belge||'',pid:b.pid||'',secimBas:b.secimBas,secimSon:b.secimSon})),fiş:f};
+    const add=(tur,baslik,not)=>rec.bulgular.push({tur,baslik,not:not||''});
+    if (!links.length) add('teyit','Paragraf bağlantısı bulunmuyor','Eski fişlerde kaynak cilt/sayfa bilgisi bulunabilir; bu durum tek başına hata değildir.');
+    for (const k of rec.links) {
+      if (!k.belge || !k.pid) {add('hata','Eksik kaynak bağlantısı','Belge kimliği veya paragraf kimliği eksik.');continue;}
+      const meta=belge(k.belge);
+      if (!meta) add('teyit','Kaynak belgesi doğrulanamadı','Kaynak paketi listesi henüz hazır olmayabilir.');
+      else {
+        if (!meta.yerel) add('teyit','Kaynak metni bu tarayıcıda hazır değil','Paragraf ve alıntı doğrulaması için yerel kaynak gerekir.');
+        if (meta.sarih && f.sarih && sade(meta.sarih)!==sade(f.sarih))
+          add('supheli','Şârih ile kaynak eseri uyuşmayabilir','Şârih adları ve eser künyesi elle karşılaştırılmalı.');
+      }
+      if (k.secimBas!=null && k.secimSon!=null && (!Number.isInteger(k.secimBas)||!Number.isInteger(k.secimSon)||k.secimBas<0||k.secimSon<=k.secimBas))
+        add('hata','Seçim konumu geçersiz','Seçimin başlangıç/bitiş karakter konumları tutarsız.');
+    }
+    if (!String(f.ar||'').trim()) add('teyit','Arapça alıntı eksik','Fişin Arapça metni kaynakla kıyaslanamıyor.');
+    if (!String(f.kaynak||'').trim()) add('teyit','Cilt/sayfa bilgisi eksik','Matbu kaynak konumu kontrol edilmeli.');
+    const key=rec.links.length ? rec.links[0].belge+'|'+rec.links[0].pid+'|'+sade(f.ar) : '';
+    if (key&&sade(f.ar).length>30) {
+      if (same.has(key)) {
+        const prev=same.get(key);
+        add('supheli','Muhtemel tekrar','Aynı paragraf ve alıntıyla '+prev+' fişi var. Ayrı tenkitler olabilir; otomatik birleştirilmez.');
+        const old=ident.get(prev);
+        if (old&&!old.bulgular.some(b=>b.baslik==='Muhtemel tekrar'))old.bulgular.push({tur:'supheli',baslik:'Muhtemel tekrar',not:'Benzer kayıt: '+f.kod});
+      } else same.set(key,f.kod);
+    }
+    ident.set(f.kod,rec);
+    records.push(rec);
+  }
+  for (const r of records) {
+    const tags=new Set(r.bulgular.map(x=>x.tur));
+    r.durum=tags.has('hata')?'hata':tags.has('supheli')?'supheli':tags.has('teyit')?'teyit':'bagli';
+    // Kullanıcı verisini değiştirilmeyen özet kopyasından inceler.
+    delete r.fiş;
+  }
+  return records;
+}
+function ozetle(rows) {
+  const z={toplam:rows.length,hata:0,supheli:0,teyit:0,bagli:0,baglantisiz:0};
+  for(const r of rows){ z[r.durum]=(z[r.durum]||0)+1;if(!r.links.length)z.baglantisiz++; }
+  return z;
+}
+function derinSonuc(fis,bag,p) {
+  if (!p) return {tur:'hata',baslik:'Paragraf bulunamadı',not:'İşaret edilen pid açılan belgenin iskeletinde bulunamadı.'};
+  if (p.tur!=='p') return {tur:'supheli',baslik:'Bağlantı paragraf olmayan bloğa gidiyor',not:'Blok türü: '+p.tur};
+  const metin=sade(p.metin||''),alinti=sade(fis.ar||'');
+  if (!alinti) return {tur:'teyit',baslik:'Arapça alıntı bulunmuyor',not:'Alıntı yoksa dijital metin eşleşmiş sayılamaz.'};
+  if (!metin) return {tur:'teyit',baslik:'Kaynak metin boş veya okunamadı',not:'Paragraf kimliği olsa da metin doğrulaması yapılamaz.'};
+  if(alinti.length>=16 && metin && !metin.includes(alinti))
+    return {tur:'supheli',baslik:'Arapça alıntı kaynakla birebir eşleşmedi',not:'İmla, farklı nüsha, kısaltma veya yanlış eşleşme olabilir.'};
+  if(bag.secimBas!=null&&bag.secimSon!=null) {
+    const from=bag.secimBas,to=bag.secimSon;
+    if(!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<=from||to>String(p.metin||'').length)
+      return {tur:'hata',baslik:'Seçim ofseti paragraf sınırının dışında',not:'Kaynak paragraf uzunluğu: '+String(p.metin||'').length};
+  }
+  const exact=/^\s*(?:c\.?\s*)?(\d+)\s*\/\s*(?:s\.?\s*)?(\d+)\s*$/.exec(String(fis.kaynak||''));
+  if(exact && p.cilt!=null && p.sayfa!=null && (Number(exact[1])!==Number(p.cilt)||Number(exact[2])!==Number(p.sayfa)))
+    return {tur:'supheli',baslik:'Cilt/sayfa uyuşmayabilir',not:'Fiş: '+fis.kaynak+'; dijital metin: '+p.cilt+'/'+p.sayfa};
+  return {tur:'uyum',baslik:'Dijital paragrafla temel eşleşme sağlandı',not:'Bu sonuç matbu neşir teyidi anlamına gelmez.'};
+}
+function kur(app,w,doc) {
+  if (!app || !app.ekran || app.kaynakFisDenetimi) return;
+  const get=()=>satirlar(app.VERI.fisler||[],
+    kod=>app.veri.baglanti(kod),id=>app.paket&&app.paket.belge(id));
+  app.kaynakFisDenetimi={hesapla:get,ozetle,derinSonuc, surum:1};
+  const h=(tag,metin,cl)=>{
+    const e=doc.createElement(tag);if(cl)e.className=cl;
+    if(metin!=null)e.textContent=String(metin);return e;
+  };
+  const line=(box,label,value)=>{
+    const c=h('span',label+': '+value,'r-kd-sayi');box.appendChild(c);
+  };
+  app.ekran('kaynakFisDenetimi',{
+    baslik:'Kaynak–Fiş Denetimi',alan:'denetim',rota:['/kaynak-denetim'],genis:true,
+    render(kok,ctx) {
+      ctx.kirinti(['Denetim','Kaynak–Fiş']);
+      const root=h('section',null,'r-kaynak-denetim');kok.appendChild(root);
+      root.appendChild(h('h2','Kaynak–Fiş Denetimi'));
+      root.appendChild(h('p','Bu ekran yalnız tespit yapar; fişleri, meseleleri, kaynak bağlantılarını ve ortak kayıtları değiştirmez. Matbu teyit ayrı bir işlemdir.','r-kd-aciklama'));
+      const counts=h('div',null,'r-kd-sayaclar');root.appendChild(counts);
+      const filter=h('select',null,'r-kd-filtre');
+      for(const [v,ad] of [['hepsi','Tüm fişler'],['hata','Yapısal hatalar'],['supheli','Şüpheli eşleşmeler'],['teyit','Teyit bekleyenler'],['bagli','Bağlantısı olanlar']]){
+        const op=h('option',ad);op.value=v;filter.appendChild(op);
+      }
+      filter.setAttribute('aria-label','Denetim durumu');
+      root.appendChild(filter);
+      const area=h('div',null,'r-kd-sonuclar');root.appendChild(area);
+      const items=get(),sum=ozetle(items);
+      line(counts,'Fiş',sum.toplam);line(counts,'Yapısal hata',sum.hata);
+      line(counts,'Şüpheli',sum.supheli);line(counts,'Teyit bekleyen',sum.teyit);
+      line(counts,'Bağlantısız',sum.baglantisiz);
+      const draw=()=>{
+        area.textContent='';
+        const rows=items.filter(x=>filter.value==='hepsi'||filter.value===x.durum);
+        area.appendChild(h('p',rows.length+' kayıt gösteriliyor. İlk 150 kayıt listelenir.','r-kd-not'));
+        for(const rec of rows.slice(0,150)){
+          const box=h('article',null,'r-kd-kayit');
+          const a=h('a',rec.kod+' · '+rec.sarih);a.href='#/fis/'+encodeURIComponent(rec.kod);
+          box.appendChild(a);
+          box.appendChild(h('span',rec.durum,'r-kd-durum'));
+          for(const item of rec.bulgular.slice(0,5))box.appendChild(h('p',item.baslik+' — '+item.not,'r-kd-bulgu'));
+          const ready=rec.links.find(x=>x.belge&&x.pid&&app.paket&&app.paket.belge(x.belge)?.yerel);
+          if(ready){
+            const btn=h('button','Yerel paragrafı doğrula','r-dugme r-dugme--hayalet r-dugme--kucuk');
+            btn.type='button';
+            btn.onclick=async()=>{
+              btn.disabled=true;btn.textContent='Kontrol ediliyor…';
+              try {
+                const f=app.veri.fis(rec.kod);
+                const p=await app.paket.paragraf(ready.belge,ready.pid);
+                const result=derinSonuc(f,ready,p);
+                const note=h('p',result.baslik+' — '+result.not,'r-kd-derin');box.appendChild(note);
+              }catch(e){box.appendChild(h('p','Kontrol tamamlanamadı: '+(e.message||e)));}
+              finally{btn.disabled=false;btn.textContent='Yeniden kontrol et';}
+            };
+            box.appendChild(btn);
+          }
+          area.appendChild(box);
+        }
+      };
+      filter.onchange=draw;draw();
+    }
+  });
+  // Denetim ekranındaki giriş bağlantısını yalnız ekle; mevcut işlevleri değiştirme.
+  function baglantiEkle() {
+    if (!app.state || app.state.ekran!=='denetim') return;
+    const ekran=doc.querySelector('#masa .r-denetim');
+    if(!ekran||ekran.querySelector('.r-kd-giris'))return;
+    const p=h('p',null,'r-kd-giris');
+    const a=h('a','Kaynak–Fiş Denetimi ›','r-dugme r-dugme--hayalet');
+    a.href='#/kaynak-denetim';p.appendChild(a);
+    ekran.insertBefore(p,ekran.firstChild);
+  }
+  app.on('ekran',()=>w.requestAnimationFrame(baglantiEkle));
+  app.on('hazir',baglantiEkle);
+  const css=doc.createElement('style');
+  css.textContent='.r-kaynak-denetim{max-width:1050px;margin:0 auto;padding:16px}.r-kd-aciklama,.r-kd-not{color:var(--r-soluk,#666)}.r-kd-sayaclar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.r-kd-sayi,.r-kd-durum{padding:4px 7px;border:1px solid var(--r-cizgi,#ddd);border-radius:5px}.r-kd-filtre{margin:10px 0;padding:8px}.r-kd-kayit{padding:12px 4px;border-bottom:1px solid var(--r-cizgi,#ddd)}.r-kd-kayit>a{font-weight:600}.r-kd-durum{margin-inline-start:12px;font-size:12px}.r-kd-bulgu,.r-kd-derin{margin:5px 0;font-size:13px}.r-kd-giris{margin:10px 0 15px}';
+  doc.head.appendChild(css);
+}
+const api={sade,satirlar,ozetle,derinSonuc,kur};
+g.RahleKaynakDenetimi=api;
+if(typeof module!=='undefined'&&module.exports)module.exports=api;
+if(g.App&&g.document)kur(g.App,g,g.document);
+})(typeof window!=='undefined'?window:globalThis);
   function siteAc() {
     durum('Site açılıyor…');
     return Promise.all([dosyaAc('site', function (n, t) { if (t > 1) durum('Site indiriliyor… ' + n + '/' + t); }), bagYukle()]).then(function (x) {
@@ -1089,6 +1262,7 @@ else w.setTimeout(()=>{if(box.isConnected&&mode==='bekliyor')start()},1600);
         hadisGorunumu(f);
         fislemeKolayligi(f);
         try { rahleKutuphaneKur(f.contentWindow.App, f.contentWindow, f.contentDocument); } catch (e) { console.warn('[kutuphane] başlatılamadı', e); }
+        try { kaynakFisDenetimi(f); } catch (e) { console.warn('[kaynak-fis-denetimi] başlatılamadı', e); }
         try { if (f.contentDocument && f.contentDocument.title) document.title = f.contentDocument.title; } catch (e) {}
         try { f.contentWindow.focus(); } catch (e) {}
       });
