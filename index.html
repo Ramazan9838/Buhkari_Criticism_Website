@@ -713,7 +713,8 @@ button:disabled { opacity: .6; cursor: progress; }
         '.r-oku-fis-secici{position:fixed;z-index:10000;width:min(340px,calc(100vw - 20px));max-height:min(50vh,340px);overflow-y:auto;background:var(--r-yuzey);color:var(--r-murekkep);border:1px solid var(--r-cizgi);border-radius:var(--r-kose-4);box-shadow:var(--r-golge);padding:8px;direction:ltr;text-align:left}' +
         '.r-oku-fis-secici__bas{font-size:13px;font-weight:700;padding:4px;color:var(--r-soluk)}' +
         '.r-oku-fis-secici__satir{display:block;width:100%;padding:8px;text-align:left;border:0;background:transparent;color:inherit;cursor:pointer;border-radius:4px;font-size:13px;white-space:normal;overflow-wrap:anywhere}' +
-        '.r-oku-fis-secici__satir:hover,.r-oku-fis-secici__satir:focus-visible{background:var(--r-secili-zemin);outline-color:var(--r-vurgu)}';
+        '.r-oku-fis-secici__satir:hover,.r-oku-fis-secici__satir:focus-visible{background:var(--r-secili-zemin);outline-color:var(--r-vurgu)}' +
+        '.r-kimlik-fis-donus{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 0;border-bottom:1px solid var(--r-cizgi)}';
       doc.head.appendChild(stil);
 
 
@@ -1070,13 +1071,91 @@ button:disabled { opacity: .6; cursor: progress; }
           action.appendChild(lnk); wrow.appendChild(action);
         }
       }
+
+      /* Yeni kaynakta Kimlik kartı yerleşik düğmeyi zaten gösterir.
+         Eski şifreli uygulamaya salt-okunur 'Metindeki yerine dön' ekle. */
+      function fisDonusYenile() {
+        var drawer = doc.getElementById('cekmece-kimlik');
+        var n = app.state && app.state.nesne;
+        var card = drawer && drawer.querySelector('.r-y5-kap.r-kimlik');
+        if (!card || !n || n.tur !== 'fis' || !n.id ||
+            card.querySelector('[data-y5-id="kimlik:donus"]')) return;
+        var f = app.veri.fis(n.id);
+        if (!f) return;
+        function konum(k) {
+          if (!k || !k.belge || !k.pid) return {tur:'hata',not:'Belge veya paragraf kimliği eksik.'};
+          if (k.secimBas != null || k.secimSon != null) {
+            if (!Number.isInteger(k.secimBas) || !Number.isInteger(k.secimSon) ||
+                k.secimBas < 0 || k.secimSon <= k.secimBas)
+              return {tur:'hata',not:'Kaydedilen seçim aralığı geçersiz.'};
+          }
+          var o = app.paket && app.paket.belge(k.belge);
+          if (!o) return {tur:'teyit',not:'Kaynak belgesi henüz hazır değil.'};
+          var b = app.paket.acik(k.belge);
+          if (!b) return {tur:'teyit',not:'Kaynak belgesi var; paragraf eşleşmesi açıldığında kontrol edilecek.'};
+          var i = app.paket.blok(k.belge,k.pid);
+          if (!Number.isInteger(i) || i < 0 || !b.tur || b.tur[i] !== 112)
+            return {tur:'hata',not:'Kaynak iskeletinde bu paragraf kimliği bulunamadı.'};
+          return {tur:'konum',not:'Paragraf konumu bulundu; alıntının metin ve neşir teyidi ayrıca gereklidir.'};
+        }
+        function hedef() {
+          var list = app.veri.baglanti(f.kod);
+          var links = (Array.isArray(list)?list:[]).filter(function(k){return k&&k.belge&&k.pid;});
+          if (!links.length) return null;
+          var oku=app.state&&(app.state.ekran==='okuHadis'||app.state.ekran==='okuTam');
+          function pget(k) {
+            if (!oku) return null;
+            var root=doc.getElementById('masa');
+            if (!root) return null;
+            var all=root.querySelectorAll('.r-oku-tm-p[data-belge][data-pid]');
+            for(var i=0;i<all.length;i++)if(all[i].dataset.belge===k.belge&&all[i].dataset.pid===k.pid)return all[i];
+            return null;
+          }
+          var here=links.find(function(k){return pget(k)&&konum(k).tur!=='hata';});
+          var choice=here||links.find(function(k){return konum(k).tur==='konum';})||
+            links.find(function(k){return konum(k).tur==='teyit'&&app.paket.belge(k.belge);})||links[0];
+          var hash=app.y5&&app.y5.tamMetinHash?app.y5.tamMetinHash(choice.belge,choice.pid):null;
+          if (!hash && app.paket && app.paket.belge(choice.belge)) hash='#/oku/kaynak/'+encodeURIComponent(choice.belge)+'?pid='+encodeURIComponent(choice.pid);
+          return {bag:choice,durum:konum(choice),paragraf:here?pget(choice):null,hash:hash,sayi:links.length};
+        }
+        var dest=hedef(),box=doc.createElement('div');
+        box.className='r-kimlik-fis-donus';
+        box.setAttribute('data-y5-id','kimlik:donus');
+        if (!dest) {
+          var tip=doc.createElement('span');tip.className='r-kucuk r-soluk';tip.textContent='Metne dönüş: bu fiş için paragraf bağlantısı henüz yok.';box.appendChild(tip);
+        } else {
+          var btn=doc.createElement('button');btn.type='button';
+          btn.className='r-dugme r-dugme--hayalet r-dugme--kucuk';
+          btn.textContent=dest.paragraf?'Metindeki yerine dön ↩':'Kaynak paragrafını aç ›';
+          btn.disabled=dest.durum.tur==='hata'||(!dest.paragraf&&!dest.hash);
+          btn.addEventListener('click',function(){
+            var x=hedef();
+            if(!x||x.durum.tur==='hata'){app.durum('Kaynak bağlantısı doğrulanamadı.');return;}
+            app.cekmece.kapat('kimlik',{odakIade:false});
+            if(x.paragraf){
+              var hidden=x.paragraf.closest('[hidden]');
+              var section=x.paragraf.closest('.r-oku-hd-bolum');
+              if(hidden&&section){var toggle=section.querySelector('.r-oku-hd-katla');if(toggle)toggle.click();}
+              x.paragraf.scrollIntoView({block:'center',behavior:'auto'});
+              try{x.paragraf.focus({preventScroll:true});}catch(e){}
+            }else if(x.hash)app.go(x.hash);
+          });
+          var label=doc.createElement('span');label.className='r-kucuk r-soluk';
+          label.dataset.durum=dest.durum.tur;
+          label.textContent=dest.durum.not+(dest.sayi>1?' '+dest.sayi+' bağlantıdan uygun olan seçildi.':'');
+          box.appendChild(btn);box.appendChild(label);
+        }
+        var first=card.querySelector('.r-kimlik-katli');
+        card.insertBefore(box,first||card.firstChild);
+      }
+
       var drawer = doc.getElementById('cekmece-kimlik');
       if (drawer && w.MutationObserver) {
         var workPending = false;
         var observer = new w.MutationObserver(function () {
           if (workPending) return;
           workPending = true;
-          w.requestAnimationFrame(function () { workPending = false; fişKartiYenile(); });
+          w.requestAnimationFrame(function () { workPending = false; fişKartiYenile(); fisDonusYenile(); });
         });
         observer.observe(drawer, { childList: true, subtree: true });
       }
@@ -1100,6 +1179,7 @@ button:disabled { opacity: .6; cursor: progress; }
       }
       dugmeYenile();
       fişKartiYenile();
+      fisDonusYenile();
       ustFisDugmesi();
       hadisUstFisDugmesi();
       hadisSecimHapYenile();
