@@ -527,10 +527,82 @@ button:disabled { opacity: .6; cursor: progress; }
 
       var stil = doc.createElement('style');
       stil.id = 'rahle-hadis-serh-katla';
-      stil.textContent = '.r-oku-hd-bolum__icerik { display:grid; grid-template-columns:minmax(0,1fr); gap:var(--r-s8); min-width:0; }.r-oku-hd-bolum__icerik[hidden] {display:none!important;}.r-oku-hd-katla {margin-inline-start:auto;white-space:nowrap;}';
+      stil.textContent = '.r-oku-hd-bolum__icerik { display:grid; grid-template-columns:minmax(0,1fr); gap:var(--r-s8); min-width:0; }.r-oku-hd-bolum__icerik[hidden] {display:none!important;}.r-oku-hd-katla {margin-inline-start:auto;white-space:nowrap;}.r-oku-hd-fis-rozet{display:inline-flex;align-items:center;justify-content:center;min-height:26px;padding:2px 9px;margin-inline-start:auto;border:1px solid var(--r-cizgi);border-radius:6px;color:var(--r-murekkep);background:var(--r-kagit);font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer}.r-oku-hd-fis-rozet:hover,.r-oku-hd-fis-rozet:focus-visible{border-color:var(--r-vurgu)}.r-oku-hd-fis-rozet+.r-oku-hd-katla{margin-inline-start:0}';
       doc.head.appendChild(stil);
 
-      var kayit = [];
+      /* Fiş rozeti görünür parçalarla sınırlanmaz: bütün blok aralığı
+         üzerinden benzersiz fiş kodlarını say. Metin yüklemek gerekmez. */
+      function bolumFisleri(sec) {
+        var out = { sayi: 0, ilkPid: null }, id = sec.getAttribute('data-belge');
+        var bl = sonKart && sonKart.bolumler && sonKart.bolumler.find(function (x) { return x.belge === id; });
+        if (!bl || bl.durum !== 'var' || bl.blokBas < 0 || bl.blokSon < bl.blokBas) return out;
+        var b = pk.acik(id);
+        if (!b) return out;
+        var kodlar = new Set();
+        for (var i = bl.blokBas; i <= bl.blokSon; i++) {
+          if (b.tur[i] !== 112) continue;
+          var pid = pk.pid(id, i);
+          if (!pid) continue;
+          var fs = pk.bagliFisler(id, pid);
+          for (var j = 0; j < fs.length; j++) {
+            var k = fs[j] && fs[j].kod;
+            if (!k || kodlar.has(k)) continue;
+            kodlar.add(k);
+            if (!out.ilkPid) out.ilkPid = pid;
+          }
+        }
+        out.sayi = kodlar.size;
+        return out;
+      }
+      function rozetGuncelle(sec) {
+        if (!sec || !sec.isConnected) return;
+        var bas = sec.querySelector('.r-oku-hd-bolum__bas');
+        if (!bas) return;
+        var onceki = bas.querySelector('.r-oku-hd-fis-rozet');
+        var sayim = bolumFisleri(sec);
+        if (!sayim.sayi) { if (onceki) onceki.remove(); return; }
+        var btn = onceki || doc.createElement('button');
+        btn.type = 'button'; btn.className = 'r-oku-hd-fis-rozet';
+        btn.textContent = sayim.sayi + ' fiş';
+        btn.setAttribute('aria-label', sayim.sayi + ' fiş: şerhi aç ve ilk fişli paragrafa git');
+        btn.title = 'Şerhi aç ve ilk fişli paragrafa git';
+        if (onceki) return;
+        var dug = bas.querySelector('.r-oku-hd-katla');
+        if (dug) bas.insertBefore(btn, dug); else bas.appendChild(btn);
+        btn.addEventListener('click', function () {
+          var guncel = bolumFisleri(sec), pid = guncel.ilkPid;
+          if (!pid) { app.durum('Bu hadis bölümünde fişli paragraf bulunamadı.'); rozetGuncelle(sec); return; }
+          var ac = bas.querySelector('.r-oku-hd-katla');
+          if (ac && ac.getAttribute('aria-expanded') === 'false') ac.click();
+          function bul() {
+            return Array.from(sec.querySelectorAll('.r-oku-hd-bloklar .r-oku-tm-p[data-pid]'))
+              .find(function (el) { return el.getAttribute('data-pid') === pid; });
+          }
+          function git(t) {
+            if (!t.isConnected || !sec.isConnected) return;
+            t.click();
+            t.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          }
+          var el = bul();
+          if (el) { git(el); return; }
+          var devam = sec.querySelector('.r-oku-hd-devam');
+          if (!devam) { app.durum('Fişli paragraf henüz açılamadı.'); return; }
+          var izleyici = null, zaman = null, bitti = false;
+          function bitir(t) {
+            if (bitti) return;
+            bitti = true;
+            if (izleyici) izleyici.disconnect();
+            if (zaman) w.clearTimeout(zaman);
+            if (t) git(t); else app.durum('Fişli paragraf henüz açılamadı.');
+          }
+          izleyici = new w.MutationObserver(function () { var t = bul(); if (t) bitir(t); });
+          izleyici.observe(sec, { childList: true, subtree: true });
+          zaman = w.setTimeout(function () { bitir(null); }, 10000);
+          devam.click();
+          var hemen = bul(); if (hemen) bitir(hemen);
+        });
+      }
+            var kayit = [];
       try { kayit = app.store.get('oku.kapaliSerhler', []); } catch (e) {}
       var kapali = new Set(Array.isArray(kayit) ? kayit : []);
       function sharihDugmesi(sec) {
@@ -584,7 +656,7 @@ button:disabled { opacity: .6; cursor: progress; }
       }
       function gorunumuGuncelle() {
         var bolumler = doc.querySelectorAll('.r-oku-hd-bolum[data-belge]');
-        for (var i = 0; i < bolumler.length; i++) sharihDugmesi(bolumler[i]);
+        for (var i = 0; i < bolumler.length; i++) { sharihDugmesi(bolumler[i]); rozetGuncelle(bolumler[i]); }
         var cipler = doc.querySelectorAll('.r-oku-hd-cip[data-belge]');
         for (var j = 0; j < cipler.length; j++) if (!cipler[j].dataset.katlaDinle) {
           cipler[j].dataset.katlaDinle = '1';
@@ -597,7 +669,16 @@ button:disabled { opacity: .6; cursor: progress; }
         }
         metinUyarisi().catch(function (e) { console.warn('[hadis] metin bildirimi', e); });
       }
-      if (typeof app.on === 'function') app.on('oku:hadisCizildi', gorunumuGuncelle);
+      if (typeof app.on === 'function') {
+        app.on('oku:hadisCizildi', gorunumuGuncelle);
+        app.on('veri', function (e) {
+          if (!e || (e.tur !== 'fis' && e.tur !== 'ek' && e.tur !== 'yukle')) return;
+          w.requestAnimationFrame(function () {
+            var bolumler = doc.querySelectorAll('.r-oku-hd-bolum[data-belge]');
+            for (var i = 0; i < bolumler.length; i++) rozetGuncelle(bolumler[i]);
+          });
+        });
+      }
       gorunumuGuncelle();
       if (w.location.hash.startsWith('#/oku/hadis')) {
         // İlk kart açılmış olsa bile Buhârî ana metninin bir kere hazırlamasını sağla.
