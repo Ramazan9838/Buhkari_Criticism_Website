@@ -771,12 +771,13 @@ button:disabled { opacity: .6; cursor: progress; }
 
       /* Hadise göre ekranında, seçili şârih paragrafını doğrudan fişle.
          Buhârî ana metni ve başlık blokları kapsam dışıdır. */
-      function hadiseGoreYeniFis() {
+      function hadiseGoreYeniFis(secim) {
+        if (!secim || !secim.pid) secim = null;
         if (!app.state || app.state.ekran !== 'okuHadis') return;
         if (app.yazilabilir && !app.yazilabilir()) {
           app.durum('Bu sekme salt okunur; fiş oluşturulamaz.'); return;
         }
-        var el = doc.querySelector('.r-oku-paket .r-oku-hd .r-oku-hd-bolum .r-oku-tm-p[aria-current][data-pid][data-belge]');
+        var el = secim && secim.el && secim.el.isConnected ? secim.el : doc.querySelector('.r-oku-paket .r-oku-hd .r-oku-hd-bolum .r-oku-tm-p[aria-current][data-pid][data-belge]');
         if (!el) {
           app.durum('Önce Hadise göre ekranında fişlemek istediğiniz şârih paragrafına tıklayın.');
           return;
@@ -806,7 +807,7 @@ button:disabled { opacity: .6; cursor: progress; }
             kod: p.pid || pid, kitabMetin: kitap };
           if (!k.ar) { app.durum('Paragraf metni henüz yükleniyor.'); return; }
           if (app.cekmece.acik('kimlik')) app.cekmece.kapat('kimlik', { odakIade: false });
-          app.oku.tezgah.ac(k);
+          app.oku.tezgah.ac(k, { secim: secim && secim.pid === pid ? secim : null });
         }).catch(function (e) { app.durum('Yeni fiş açılamadı: ' + (e && e.message || e)); });
       }
       function hadisUstFisDugmesi() {
@@ -819,13 +820,91 @@ button:disabled { opacity: .6; cursor: progress; }
           sag.className = 'r-oku-pu__sag';
           ust.appendChild(sag);
         }
-        var btn = sinifDugmesi('+ Yeni fiş', hadiseGoreYeniFis);
+        var btn = sinifDugmesi('+ Yeni fiş', function () { hadiseGoreYeniFis(null); });
         btn.dataset.rahleYeniFis = 'hadis';
         btn.setAttribute('aria-label', 'Seçili şârih paragrafından yeni fiş oluştur');
         btn.title = 'Önce şârih paragrafını seçin, ardından yeni fiş açın (N)';
         sag.insertBefore(btn, sag.firstChild);
       }
 
+      /* Hadise göre ekranında seçim üzerinde + ve Tekrar bak.
+         Yeni kaynak uygulamada kendi r-oku-hd-hap öğesi varsa ikincisini oluşturma. */
+      var hadisSecilen = null;
+      function hadisSecimHapYenile() {
+        if (!app.state || app.state.ekran !== 'okuHadis') {
+          hadisSecilen = null;
+          var once = doc.querySelector('.r-oku-hd-hap[data-rahle-kopru="1"]');
+          if (once) once.hidden = true;
+          return;
+        }
+        var kok = doc.querySelector('.r-ekran.r-oku-paket');
+        if (!kok) return;
+        var hap = kok.querySelector('.r-oku-hd-hap');
+        if (hap && hap.dataset.rahleKopru !== '1') return;
+        if (!hap) {
+          hap = doc.createElement('div');
+          hap.className = 'r-oku-hap r-oku-hd-hap';
+          hap.dataset.rahleKopru = '1';
+          hap.setAttribute('role', 'toolbar');
+          hap.setAttribute('aria-label', 'Seçim');
+          hap.hidden = true;
+          var plus = doc.createElement('button');
+          plus.type = 'button';
+          plus.className = 'r-dugme r-dugme--hayalet r-oku-hap__ekle';
+          plus.textContent = '+';
+          plus.setAttribute('aria-label', 'Seçili metinden yeni fiş aç');
+          plus.title = 'Seçili metinden yeni fiş aç (N)';
+          plus.addEventListener('pointerdown', function (e) { e.preventDefault(); });
+          plus.addEventListener('click', function () {
+            var sec = hadisSecilen;
+            if (sec) hadiseGoreYeniFis(sec);
+            hap.hidden = true;
+          });
+          var repeat = doc.createElement('button');
+          repeat.type = 'button';
+          repeat.className = 'r-dugme r-dugme--hayalet';
+          repeat.appendChild(doc.createTextNode('Tekrar bak '));
+          var kbd = doc.createElement('kbd');
+          kbd.textContent = 'R'; repeat.appendChild(kbd);
+          repeat.addEventListener('pointerdown', function (e) { e.preventDefault(); });
+          repeat.addEventListener('click', async function () {
+            var sec = hadisSecilen;
+            if (!sec || !sec.pid || !sec.belge) return;
+            hap.hidden = true;
+            var ozet = app.paket.belge(sec.belge);
+            if (!ozet || !ozet.sarih || ozet.tur === 'metin' || ozet.tur === 'mukaddime') return;
+            var kaynak;
+            try { kaynak = await app.paket.paragraf(sec.belge, sec.pid); }
+            catch (e) { app.durum('Paragraf bilgisi okunamadı: ' + (e && e.message || e)); return; }
+            if (!kaynak || kaynak.tur !== 'p' || !sec.el.isConnected) return;
+            var h = app.okuHadis && app.okuHadis.durum && app.okuHadis.durum();
+            var k = { belge: sec.belge, pid: sec.pid, blok: sec.blok,
+              sarih: ozet.sarih, cilt: kaynak.cilt, sayfa: kaynak.sayfa,
+              hadisNo: h && h.no, guven: null, kitab: '' };
+            if (app.oku.isaretKoy(k, 'tekrar')) {
+              try { w.getSelection().removeAllRanges(); } catch (e) {}
+              app.go(w.location.hash, { yenile: true });
+            }
+          });
+          hap.appendChild(plus); hap.appendChild(repeat); kok.appendChild(hap);
+        }
+        var sec = app.oku.secim(kok);
+        var o = sec && sec.belge && app.paket.belge(sec.belge);
+        if (!sec || !sec.el || !sec.el.closest('.r-oku-hd-bolum') || !o ||
+            !o.sarih || o.tur === 'metin' || o.tur === 'mukaddime') {
+          hadisSecilen = null; hap.hidden = true; return;
+        }
+        var sel = w.getSelection();
+        if (!sel || !sel.rangeCount || !sec.el.contains(sel.getRangeAt(0).startContainer) ||
+            !sec.el.contains(sel.getRangeAt(0).endContainer)) {
+          hadisSecilen = null; hap.hidden = true; return;
+        }
+        hadisSecilen = sec;
+        var kr = kok.getBoundingClientRect(), rr = sec.rect;
+        hap.style.setProperty('--r-oku-hap-x', Math.round(rr.left + rr.width / 2 - kr.left) + 'px');
+        hap.style.setProperty('--r-oku-hap-y', Math.round((app.mobil() ? rr.bottom + 12 : rr.top - 12) - kr.top) + 'px');
+        hap.hidden = false;
+      }
       function dugmeYenile() {
         if (!app.state || app.state.ekran !== 'okuTam') return;
         var hap = doc.querySelector('.r-ekran[data-ekran="okuTam"] .r-oku-hap, .r-ekran[data-ekran="oku"] .r-oku-hap');
@@ -886,10 +965,10 @@ button:disabled { opacity: .6; cursor: progress; }
         });
         observer.observe(drawer, { childList: true, subtree: true });
       }
-      doc.addEventListener('selectionchange', function () { w.requestAnimationFrame(dugmeYenile); });
+      doc.addEventListener('selectionchange', function () { w.requestAnimationFrame(function () { dugmeYenile(); hadisSecimHapYenile(); }); });
       if (typeof app.on === 'function') {
         app.on('ekran', function () {
-          w.requestAnimationFrame(function () { dugmeYenile(); ustFisDugmesi(); hadisUstFisDugmesi(); });
+          w.requestAnimationFrame(function () { dugmeYenile(); ustFisDugmesi(); hadisUstFisDugmesi(); hadisSecimHapYenile(); });
         });
       }
       /* Tam metin ekranı sonradan oluşturulsa bile düğmeyi yalnız bir kez yerleştir. */
@@ -906,6 +985,7 @@ button:disabled { opacity: .6; cursor: progress; }
       fişKartiYenile();
       ustFisDugmesi();
       hadisUstFisDugmesi();
+      hadisSecimHapYenile();
     } catch (e) { console.warn('[fisleme] kolaylıklar eklenemedi:', e); }
   }
 
