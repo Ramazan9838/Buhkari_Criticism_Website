@@ -656,6 +656,95 @@ button:disabled { opacity: .6; cursor: progress; }
       }
       if (!app.oku.yeniFisParagraf) app.oku.yeniFisParagraf = tamMetindeYeniFis;
 
+      /* Tam metin fişlemesi gizli bir çekmeceyle sınırlı kalmasın.
+         Üst çubukta, seçili kaynak paragrafından fiş açan açık bir düğme. */
+      function ustFisDugmesi() {
+        if (!app.state || app.state.ekran !== 'okuTam') return;
+        var ust = doc.querySelector('.r-oku-paket .r-oku-tm-ust');
+        if (!ust || ust.querySelector('[data-rahle-yeni-fis="1"]')) return;
+        var oz = null, durumTam = null;
+        try { durumTam = app.okuTam && app.okuTam.durum && app.okuTam.durum(); } catch (e) {}
+        if (durumTam && durumTam.belge) oz = app.paket.belge(durumTam.belge);
+        if (oz && (!oz.sarih || oz.tur === 'metin' || oz.tur === 'mukaddime')) return;
+        var sag = ust.querySelector('.r-oku-pu__sag') || ust;
+        var btn = sinifDugmesi('+ Yeni fiş', function () {
+          var durum = null;
+          try { durum = app.okuTam && app.okuTam.durum && app.okuTam.durum(); } catch (e) {}
+          var belge = durum && durum.belge;
+          var pid = null;
+          try {
+            if (belge && durum.imlec >= 0) pid = app.paket.pid(belge, durum.imlec);
+            if (!pid && belge) {
+              var secilen = doc.querySelector('.r-oku-paket .r-oku-tm-p[aria-current][data-pid]');
+              if (secilen) pid = secilen.getAttribute('data-pid');
+            }
+          } catch (e) {}
+          if (!belge || !pid) { app.durum('Önce fişlemek istediğiniz paragrafa tıklayın.'); return; }
+          tamMetindeYeniFis(belge, pid);
+        });
+        btn.dataset.rahleYeniFis = '1';
+        btn.setAttribute('aria-label', 'Seçili paragraftan yeni fiş oluştur');
+        btn.title = 'Önce metindeki paragrafa tıklayın, ardından yeni fiş açın (N)';
+        sag.insertBefore(btn, sag.firstChild);
+      }
+
+      /* Hadise göre ekranında, seçili şârih paragrafını doğrudan fişle.
+         Buhârî ana metni ve başlık blokları kapsam dışıdır. */
+      function hadiseGoreYeniFis() {
+        if (!app.state || app.state.ekran !== 'okuHadis') return;
+        if (app.yazilabilir && !app.yazilabilir()) {
+          app.durum('Bu sekme salt okunur; fiş oluşturulamaz.'); return;
+        }
+        var el = doc.querySelector('.r-oku-paket .r-oku-hd .r-oku-hd-bolum .r-oku-tm-p[aria-current][data-pid][data-belge]');
+        if (!el) {
+          app.durum('Önce Hadise göre ekranında fişlemek istediğiniz şârih paragrafına tıklayın.');
+          return;
+        }
+        var belge = el.getAttribute('data-belge'), pid = el.getAttribute('data-pid');
+        var oz = app.paket.belge(belge);
+        if (!oz || !oz.sarih || oz.tur === 'metin' || oz.tur === 'mukaddime') {
+          app.durum('Buhârî ana metni veya şerh olmayan metin fişlenemez.'); return;
+        }
+        var hash = w.location.hash;
+        app.paket.paragraf(belge, pid).then(function (p) {
+          if (!p || p.tur !== 'p') { app.durum('Fişlemek için bir şârih paragrafı seçin.'); return; }
+          if (!app.state || app.state.ekran !== 'okuHadis' || w.location.hash !== hash) return;
+          if (!doc.querySelector('.r-oku-hd-bolum [data-pid="' + (w.CSS && w.CSS.escape ? w.CSS.escape(pid) : pid.replace(/"/g, '')) + '"][aria-current]')) {
+            app.durum('Seçili paragraf değişti; fişlemek istediğiniz paragrafı yeniden seçin.'); return;
+          }
+          var sarih = app.veri.sarih(oz.sarih) || {};
+          var no = app.okuHadis && app.okuHadis.durum && app.okuHadis.durum();
+          no = no && no.no;
+          var kitap = p.kitab && p.kitab.ad || '';
+          var bab = p.bab && p.bab.ad || '';
+          var k = { tur: 'paragraf', sarih: oz.sarih, eser: sarih.eser || oz.eser || '',
+            vefat: sarih.vefat || oz.vefat || '', kitab: kitap, bab: bab,
+            hadis: no ? 'h. ' + no : '', buhariNo: no && Number(p.hadisNo) === Number(no) ? String(no) : '',
+            kaynak: p.cilt ? p.cilt + '/' + p.sayfa : 's. ' + p.sayfa,
+            nesir: '', konum: '', ar: p.metin || '', belge: belge, pid: p.pid || pid,
+            kod: p.pid || pid, kitabMetin: kitap };
+          if (!k.ar) { app.durum('Paragraf metni henüz yükleniyor.'); return; }
+          if (app.cekmece.acik('kimlik')) app.cekmece.kapat('kimlik', { odakIade: false });
+          app.oku.tezgah.ac(k);
+        }).catch(function (e) { app.durum('Yeni fiş açılamadı: ' + (e && e.message || e)); });
+      }
+      function hadisUstFisDugmesi() {
+        if (!app.state || app.state.ekran !== 'okuHadis') return;
+        var ust = doc.querySelector('.r-oku-paket > .r-oku-pu') || doc.querySelector('.r-oku-paket .r-oku-pu');
+        if (!ust || ust.querySelector('[data-rahle-yeni-fis="hadis"]')) return;
+        var sag = ust.querySelector('.r-oku-pu__sag');
+        if (!sag) {
+          sag = doc.createElement('div');
+          sag.className = 'r-oku-pu__sag';
+          ust.appendChild(sag);
+        }
+        var btn = sinifDugmesi('+ Yeni fiş', hadiseGoreYeniFis);
+        btn.dataset.rahleYeniFis = 'hadis';
+        btn.setAttribute('aria-label', 'Seçili şârih paragrafından yeni fiş oluştur');
+        btn.title = 'Önce şârih paragrafını seçin, ardından yeni fiş açın (N)';
+        sag.insertBefore(btn, sag.firstChild);
+      }
+
       function dugmeYenile() {
         if (!app.state || app.state.ekran !== 'okuTam') return;
         var hap = doc.querySelector('.r-ekran[data-ekran="okuTam"] .r-oku-hap, .r-ekran[data-ekran="oku"] .r-oku-hap');
@@ -697,7 +786,7 @@ button:disabled { opacity: .6; cursor: progress; }
           el.parentNode.insertBefore(wrow, el);
           wrow.appendChild(el);
           action.appendChild(sinifDugmesi('Düzenle', (function (id) {
-            return function () { app.nesne({ tur: 'fis', id: id }); };
+            return function () { app.go('#/fis/' + encodeURIComponent(id)); };
           })(kod)));
           var lnk = doc.createElement('a');
           lnk.className = 'r-dugme r-dugme--hayalet r-dugme--kucuk';
@@ -718,10 +807,24 @@ button:disabled { opacity: .6; cursor: progress; }
       }
       doc.addEventListener('selectionchange', function () { w.requestAnimationFrame(dugmeYenile); });
       if (typeof app.on === 'function') {
-        app.on('ekran', function () { w.requestAnimationFrame(dugmeYenile); });
+        app.on('ekran', function () {
+          w.requestAnimationFrame(function () { dugmeYenile(); ustFisDugmesi(); hadisUstFisDugmesi(); });
+        });
+      }
+      /* Tam metin ekranı sonradan oluşturulsa bile düğmeyi yalnız bir kez yerleştir. */
+      var ekranKok = doc.getElementById('ekran') || doc.body;
+      if (ekranKok && w.MutationObserver) {
+        var ustBekle = false;
+        new w.MutationObserver(function () {
+          if (ustBekle || !app.state || (app.state.ekran !== 'okuTam' && app.state.ekran !== 'okuHadis')) return;
+          ustBekle = true;
+          w.requestAnimationFrame(function () { ustBekle = false; ustFisDugmesi(); hadisUstFisDugmesi(); });
+        }).observe(ekranKok, { childList: true, subtree: true });
       }
       dugmeYenile();
       fişKartiYenile();
+      ustFisDugmesi();
+      hadisUstFisDugmesi();
     } catch (e) { console.warn('[fisleme] kolaylıklar eklenemedi:', e); }
   }
 
