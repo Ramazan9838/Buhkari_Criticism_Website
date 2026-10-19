@@ -1299,7 +1299,7 @@ function satirlar(fisler, bag, belge) {
     if (!f || !f.kod) continue;
     const raw=bag(f.kod), links=Array.isArray(raw) ? raw : [];
     const rec={kod:f.kod,sarih:f.sarih||'',eser:f.eser||'',kaynak:f.kaynak||'',
-      durum:'bagli',bulgular:[],links:links.filter(Boolean).map(b=>({belge:b.belge||'',pid:b.pid||'',secimBas:b.secimBas,secimSon:b.secimSon})),fiş:f};
+      durum:'bagli',bulgular:[],links:links.filter(Boolean).map(b=>({belge:b.belge||'',pid:b.pid||'',secimBas:b.secimBas,secimSon:b.secimSon,tam:b.tam})),fiş:f};
     const add=(tur,baslik,not)=>rec.bulgular.push({tur,baslik,not:not||''});
     if (!links.length) add('teyit','Paragraf bağlantısı bulunmuyor','Eski fişlerde kaynak cilt/sayfa bilgisi bulunabilir; bu durum tek başına hata değildir.');
     if (links.length > rec.links.length) add('hata','Boş kaynak bağlantısı kaydı','Kaynak bağlantıları arasında geçersiz ya da boş bir kayıt var.');
@@ -1370,10 +1370,30 @@ function derinSonuc(fis,bag,p) {
     : 'Kısa ifade bu paragrafta bulunamadı; farklı imla veya bağlam ihtimali ayrıca incelenmeli.'};
   if (!metin.includes(alinti))
     return {tur:'supheli',baslik:'Arapça alıntı kaynakla birebir eşleşmedi',not:'İmla, farklı nüsha, kısaltma veya yanlış eşleşme olabilir.'};
+  // Paragrafta alıntının bulunması, fişin bağlandığı *kesin* işaretli
+  // kelimelerin de doğru yerde olduğunu kanıtlamaz.
+  // "tam:false" eski paragraf seviyeli bağlantıdır; metin aralığı iddiası yok.
+  const secimVar = bag && bag.tam !== false &&
+    Number.isInteger(bag.secimBas) && Number.isInteger(bag.secimSon);
+  let seciliMetin = '';
+  if (secimVar) {
+    seciliMetin = String(p.metin || '').slice(bag.secimBas, bag.secimSon);
+    const secili = sade(seciliMetin);
+    if (secili.length >= 12 && !alinti.includes(secili) && !secili.includes(alinti))
+      return {tur:'supheli',
+        baslik:'Alıntı mevcut, ancak fişin işaretlediği metin farklı',
+        not:'Dijital paragrafta alıntı geçiyor; kayıtlı seçim ofseti başka kelimelere denk geliyor. Yanlış aralık veya farklı nüsha ihtimali elle kontrol edilmeli.',
+        kanit:{seciliMetin:seciliMetin.slice(0,300),alinti:String(fis.ar||'').slice(0,300)}};
+  }
   const exact=/^\s*(?:c\.?\s*)?(\d+)\s*\/\s*(?:s\.?\s*)?(\d+)\s*$/.exec(String(fis.kaynak||''));
   if(exact && p.cilt!=null && p.sayfa!=null && (Number(exact[1])!==Number(p.cilt)||Number(exact[2])!==Number(p.sayfa)))
     return {tur:'supheli',baslik:'Cilt/sayfa uyuşmayabilir',not:'Fiş: '+fis.kaynak+'; dijital metin: '+p.cilt+'/'+p.sayfa};
-  return {tur:'uyum',baslik:'Dijital paragrafla temel eşleşme sağlandı',not:'Bu sonuç matbu neşir teyidi anlamına gelmez.'};
+  return {tur:'uyum',
+    baslik:secimVar&&sade(seciliMetin).length>=12
+      ? 'Alıntı ve işaretli aralık dijital paragrafla eşleşti'
+      : 'Dijital paragrafla temel eşleşme sağlandı',
+    not:'Bu sonuç matbu neşir teyidi değildir; hadis değerlendirmesinin ilmî doğrulaması anlamına gelmez.',
+    kanit:secimVar?{seciliMetin:seciliMetin.slice(0,300),alinti:String(fis.ar||'').slice(0,300)}:null};
 }
 function kur(app,w,doc) {
   if (!app || !app.ekran || app.kaynakFisDenetimi) return;
@@ -1417,22 +1437,43 @@ function kur(app,w,doc) {
           box.appendChild(a);
           box.appendChild(h('span',rec.durum,'r-kd-durum'));
           for(const item of rec.bulgular.slice(0,5))box.appendChild(h('p',item.baslik+' — '+item.not,'r-kd-bulgu'));
-          const ready=rec.links.find(x=>x.belge&&x.pid&&app.paket&&app.paket.belge(x.belge)?.yerel);
-          if(ready){
-            const btn=h('button','Yerel paragrafı doğrula','r-dugme r-dugme--hayalet r-dugme--kucuk');
+          // Aynı fiş birden fazla paragrafla ilişkilendirilebilir.
+          // İlk bağla sınırlamak diğer yanlış bağlantıları gizler. Her hazır
+          // bağlantıyı kullanıcı isteğiyle ve birbirinden bağımsız denetle.
+          const baglar=rec.links.filter(x=>x.belge&&x.pid);
+          const hazir=baglar.filter(x=>app.paket&&app.paket.belge(x.belge)?.yerel);
+          if (baglar.length>1) box.appendChild(h('p',baglar.length+' kaynak bağlantısı · '+hazir.length+' yerelde hazır','r-kd-not'));
+          for(const [n,ready] of hazir.slice(0,8).entries()){
+            const btn=h('button',(n+1)+'. kaynak paragrafını doğrula','r-dugme r-dugme--hayalet r-dugme--kucuk');
             btn.type='button';
+            const aciklama=h('span',ready.belge+' · '+ready.pid,'r-kd-kaynak');
+            const sonucAlani=h('div',null,'r-kd-derin-sonuc');
+            const alan=h('div',null,'r-kd-bag');alan.appendChild(aciklama);
+            alan.appendChild(btn);alan.appendChild(sonucAlani);box.appendChild(alan);
             btn.onclick=async()=>{
+              if(btn.disabled)return;
               btn.disabled=true;btn.textContent='Kontrol ediliyor…';
+              sonucAlani.textContent='';
               try {
-                const f=app.veri.fis(rec.kod);
+                const fis=app.veri.fis(rec.kod);
                 const p=await app.paket.paragraf(ready.belge,ready.pid);
-                const result=derinSonuc(f,ready,p);
-                const note=h('p',result.baslik+' — '+result.not,'r-kd-derin');box.appendChild(note);
-              }catch(e){box.appendChild(h('p','Kontrol tamamlanamadı: '+(e.message||e)));}
-              finally{btn.disabled=false;btn.textContent='Yeniden kontrol et';}
+                const result=derinSonuc(fis,ready,p);
+                sonucAlani.appendChild(h('p',result.baslik+' — '+result.not,'r-kd-derin r-kd-derin--'+result.tur));
+                if(result.kanit && result.kanit.seciliMetin) {
+                  const kanit=h('div',null,'r-kd-kanıt');
+                  kanit.appendChild(h('strong','Fişteki Arapça alıntı'));
+                  kanit.appendChild(h('p',result.kanit.alinti,'r-kd-arapca'));
+                  kanit.appendChild(h('strong','Kaynakta işaretlenen gerçek metin'));
+                  kanit.appendChild(h('p',result.kanit.seciliMetin,'r-kd-arapca'));
+                  sonucAlani.appendChild(kanit);
+                }
+              }catch(e){
+                sonucAlani.appendChild(h('p','Kontrol tamamlanamadı: '+(e.message||e),'r-kd-derin'));
+              }finally{btn.disabled=false;btn.textContent='Yeniden kontrol et';}
             };
-            box.appendChild(btn);
           }
+          if (hazir.length>8)
+            box.appendChild(h('p','İlk 8 yerel bağlantı gösteriliyor. Diğerlerini fiş kartından inceleyin.','r-kd-not'));
           area.appendChild(box);
         }
       };
@@ -1452,7 +1493,7 @@ function kur(app,w,doc) {
   app.on('ekran',()=>w.requestAnimationFrame(baglantiEkle));
   app.on('hazir',baglantiEkle);
   const css=doc.createElement('style');
-  css.textContent='.r-kaynak-denetim{max-width:1050px;margin:0 auto;padding:16px}.r-kd-aciklama,.r-kd-not{color:var(--r-soluk,#666)}.r-kd-sayaclar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.r-kd-sayi,.r-kd-durum{padding:4px 7px;border:1px solid var(--r-cizgi,#ddd);border-radius:5px}.r-kd-filtre{margin:10px 0;padding:8px}.r-kd-kayit{padding:12px 4px;border-bottom:1px solid var(--r-cizgi,#ddd)}.r-kd-kayit>a{font-weight:600}.r-kd-durum{margin-inline-start:12px;font-size:12px}.r-kd-bulgu,.r-kd-derin{margin:5px 0;font-size:13px}.r-kd-giris{margin:10px 0 15px}';
+  css.textContent='.r-kaynak-denetim{max-width:1050px;margin:0 auto;padding:16px}.r-kd-aciklama,.r-kd-not{color:var(--r-soluk,#666)}.r-kd-sayaclar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.r-kd-sayi,.r-kd-durum{padding:4px 7px;border:1px solid var(--r-cizgi,#ddd);border-radius:5px}.r-kd-filtre{margin:10px 0;padding:8px}.r-kd-kayit{padding:12px 4px;border-bottom:1px solid var(--r-cizgi,#ddd)}.r-kd-kayit>a{font-weight:600}.r-kd-durum{margin-inline-start:12px;font-size:12px}.r-kd-bulgu,.r-kd-derin{margin:5px 0;font-size:13px}.r-kd-giris{margin:10px 0 15px}.r-kd-bag{margin:10px 0}.r-kd-kaynak{display:block;font-size:12px;color:var(--r-soluk,#666);overflow-wrap:anywhere;margin-bottom:3px}.r-kd-kanıt{background:var(--r-yuzey,#fff);padding:8px 12px;border:1px solid var(--r-cizgi,#ddd);border-radius:6px;margin:8px 0}.r-kd-kanıt strong{display:block;font-size:12px}.r-kd-arapca{font-size:16px;direction:rtl;text-align:right;line-height:1.9;font-family:var(--r-yazi-ar,serif);overflow-wrap:anywhere;margin:4px 0 9px}.r-kd-derin--supheli{border-inline-start:3px solid #b47815;padding-inline-start:8px}.r-kd-derin--uyum{border-inline-start:3px solid var(--r-vurgu,#578);padding-inline-start:8px}';
   doc.head.appendChild(css);
 }
 const api={sade,satirlar,ozetle,derinSonuc,kur};
