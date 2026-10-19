@@ -706,7 +706,14 @@ button:disabled { opacity: .6; cursor: progress; }
         '.r-oku-hap .r-oku-hap__ekle {min-width:34px;font-size:var(--r-b18);font-weight:600}' +
         '.r-oku-tm-secim[data-eylem="okuP:fis"]{background:#ffef83;color:#2c270f;border-radius:3px;cursor:pointer;padding-inline:1px;-webkit-box-decoration-break:clone;box-decoration-break:clone}' +
         '.r-oku-tm-secim[data-eylem="okuP:fis"]:hover,.r-oku-tm-secim[data-eylem="okuP:fis"][data-etkin="1"]{background:#ffdc4d;color:#26200a}' +
-        '.r-oku-tm-secim[data-eylem="okuP:fis"]:focus-visible{outline:2px solid var(--r-vurgu);outline-offset:2px}';
+        '.r-oku-tm-secim[data-eylem="okuP:fis"]:focus-visible{outline:2px solid var(--r-vurgu);outline-offset:2px}' +
+        '.r-oku-tm-secim[data-eylem="okuP:fisListe"]{background:#ffef83;color:#2c270f;border-radius:3px;cursor:pointer;-webkit-box-decoration-break:clone;box-decoration-break:clone}' +
+        '.r-oku-tm-secim[data-eylem="okuP:fisListe"]:hover{background:#ffdc4d;color:#26200a}' +
+        '.r-oku-tm-secim[data-eylem="okuP:fisListe"]:focus-visible{outline:2px solid var(--r-vurgu);outline-offset:2px}' +
+        '.r-oku-fis-secici{position:fixed;z-index:10000;width:min(340px,calc(100vw - 20px));max-height:min(50vh,340px);overflow-y:auto;background:var(--r-yuzey);color:var(--r-murekkep);border:1px solid var(--r-cizgi);border-radius:var(--r-kose-4);box-shadow:var(--r-golge);padding:8px;direction:ltr;text-align:left}' +
+        '.r-oku-fis-secici__bas{font-size:13px;font-weight:700;padding:4px;color:var(--r-soluk)}' +
+        '.r-oku-fis-secici__satir{display:block;width:100%;padding:8px;text-align:left;border:0;background:transparent;color:inherit;cursor:pointer;border-radius:4px;font-size:13px;white-space:normal;overflow-wrap:anywhere}' +
+        '.r-oku-fis-secici__satir:hover,.r-oku-fis-secici__satir:focus-visible{background:var(--r-secili-zemin);outline-color:var(--r-vurgu)}';
       doc.head.appendChild(stil);
 
 
@@ -738,16 +745,81 @@ button:disabled { opacity: .6; cursor: progress; }
             if (g.secimBas <= offset && g.secimSon >= end && codes.indexOf(g.kod) < 0) codes.push(g.kod);
           }
           if (!codes.length) continue;
-          mark.dataset.eylem = 'okuP:fis';
+          mark.dataset.eylem = codes.length > 1 ? 'okuP:fisListe' : 'okuP:fis';
           mark.dataset.kod = codes[0];
+          if (codes.length > 1) mark.dataset.kodlar = JSON.stringify(codes);
           mark.setAttribute('role', 'button');
           mark.setAttribute('tabindex', '0');
           mark.setAttribute('title', codes.length > 1
-            ? 'Fiş '+codes.join(', ')+' · diğer fişler alttaki rozetlerde'
+            ? codes.length+' fiş · seçmek için tıklayın'
             : 'Fiş '+codes[0]+' · kimlik kartını aç');
-          mark.setAttribute('aria-label', 'Fiş '+codes[0]+' kimlik kartını aç');
+          mark.setAttribute('aria-label', codes.length > 1
+            ? codes.length+' fişli Arapça pasaj · fiş seç'
+            : 'Fiş '+codes[0]+' kimlik kartını aç');
         }
       }
+
+
+      /* Eski şifreli uygulamada da çoklu fiş seçim listesini aç.
+         Yeni kaynak uygulaması yüklüyse tek kaynak API'sine delege et. */
+      var acikFisListe = null;
+      function listeyiKapat(odak) {
+        var o = acikFisListe;
+        if (!o) return;
+        acikFisListe = null;
+        doc.removeEventListener('pointerdown',o.disarida,true);
+        doc.removeEventListener('keydown',o.tus,true);
+        o.kutu.remove();
+        if (odak && o.isaret.isConnected) try { o.isaret.focus({preventScroll:true}); } catch (e) {}
+      }
+      function eskiFisiSec(el) {
+        if (!el || !el.dataset) return;
+        if (acikFisListe && acikFisListe.isaret === el) { listeyiKapat(true); return; }
+        listeyiKapat();
+        var p = el.closest('.r-oku-tm-p[data-belge][data-pid]');
+        if (!p) return;
+        var codes;
+        try { codes=JSON.parse(el.dataset.kodlar || '[]'); } catch(e) { return; }
+        if (!Array.isArray(codes)) return;
+        var baglar=[];
+        try { baglar=app.paket.bagliFisler(p.dataset.belge,p.dataset.pid)||[]; } catch(e) { return; }
+        var izin=new Set(baglar.map(function(a){return a && a.kod;}));
+        codes=Array.from(new Set(codes.filter(function(k){return typeof k==='string' && izin.has(k);}))).slice(0,50);
+        if (codes.length < 2) {
+          if (codes.length) { app.nesne({tur:'fis',id:codes[0]});app.cekmece.ac('kimlik',{kaynak:'fare',sonOdak:el}); }
+          return;
+        }
+        var kutu=doc.createElement('div');kutu.className='r-oku-fis-secici';
+        kutu.setAttribute('role','dialog');kutu.setAttribute('aria-label','Bu pasajdaki '+codes.length+' fiş');
+        var bas=doc.createElement('div');bas.className='r-oku-fis-secici__bas';bas.textContent=codes.length+' fiş · birini seçin';kutu.appendChild(bas);
+        codes.forEach(function(k){
+          var btn=doc.createElement('button');btn.type='button';btn.className='r-oku-fis-secici__satir';
+          var f=app.veri.fis(k)||{},desc=f.tr||f.mesele||f.sarih||'';
+          btn.textContent=k+(desc?' · '+String(desc).slice(0,76):'');
+          btn.setAttribute('aria-label','Fiş '+k+' kimlik kartını aç');
+          btn.addEventListener('click',function(){
+            listeyiKapat();
+            app.nesne({tur:'fis',id:k});
+            app.cekmece.ac('kimlik',{kaynak:'fare',sonOdak:el});
+          });
+          kutu.appendChild(btn);
+        });
+        doc.body.appendChild(kutu);
+        var r=el.getBoundingClientRect(),width=Math.min(340,Math.max(210,w.innerWidth-20));
+        kutu.style.left=Math.round(Math.max(10,Math.min(w.innerWidth-width-10,r.left)))+'px';
+        var height=kutu.getBoundingClientRect().height;
+        kutu.style.top=Math.round(w.innerHeight-r.bottom>=Math.min(height+10,220)?r.bottom+6:Math.max(8,r.top-height-6))+'px';
+        var disarida=function(e){if(!kutu.contains(e.target)&&e.target!==el)listeyiKapat();};
+        var tus=function(e){if(e.key==='Escape'){e.preventDefault();e.stopPropagation();listeyiKapat(true);}};
+        acikFisListe={kutu:kutu,isaret:el,disarida:disarida,tus:tus};
+        doc.addEventListener('pointerdown',disarida,true);
+        doc.addEventListener('keydown',tus,true);
+        var ilk=kutu.querySelector('button');if(ilk)ilk.focus({preventScroll:true});
+      }
+      app.eylem('okuP:fisListe',function(el){
+        if (app.oku && typeof app.oku.fisListeAc==='function') app.oku.fisListeAc(el);
+        else eskiFisiSec(el);
+      });
 
       function sinifDugmesi(etiket, action) {
         var btn = doc.createElement('button');
