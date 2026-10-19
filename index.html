@@ -703,8 +703,51 @@ button:disabled { opacity: .6; cursor: progress; }
       stil.textContent =
         '@media screen and (min-width: 900px) {.r-ekran[data-ekran="oku"] .r-oku-ust {position:sticky;top:0;right:auto;width:100%;margin:0 0 var(--r-s8);padding:var(--r-s4) 0;z-index:var(--r-z-yapisik);background:var(--r-kagit);border-bottom:1px solid var(--r-cizgi);align-content:start}.r-ekran[data-ekran="oku"] .r-oku-ust__satir {flex-wrap:nowrap}}' +
         '.r-kimlik-paragraf__fis {display:grid;gap:var(--r-s4);padding-bottom:var(--r-s8)}.r-kimlik-paragraf__fis .r-dugme-grubu {justify-content:flex-start}.r-kimlik-paragraf__eylem {margin-block:var(--r-s8)}' +
-        '.r-oku-hap .r-oku-hap__ekle {min-width:34px;font-size:var(--r-b18);font-weight:600}';
+        '.r-oku-hap .r-oku-hap__ekle {min-width:34px;font-size:var(--r-b18);font-weight:600}' +
+        '.r-oku-tm-secim[data-eylem="okuP:fis"]{background:#ffef83;color:#2c270f;border-radius:3px;cursor:pointer;padding-inline:1px;-webkit-box-decoration-break:clone;box-decoration-break:clone}' +
+        '.r-oku-tm-secim[data-eylem="okuP:fis"]:hover,.r-oku-tm-secim[data-eylem="okuP:fis"][data-etkin="1"]{background:#ffdc4d;color:#26200a}' +
+        '.r-oku-tm-secim[data-eylem="okuP:fis"]:focus-visible{outline:2px solid var(--r-vurgu);outline-offset:2px}';
       doc.head.appendChild(stil);
+
+
+      /* Eski şifreli pakette .r-oku-tm-secim işaretleri yalnız renklidir:
+         kesin ofsetin bağlı olduğu fiş koduyla aynı Kimlik kartı eylemine bağla.
+         Belirsiz/tam paragraf bağları için hiçbir kelimeyi tahminen işaretleme. */
+      function fisliMetinBagla() {
+        if (!app.state || (app.state.ekran !== 'okuHadis' && app.state.ekran !== 'okuTam')) return;
+        var marks = doc.querySelectorAll('.r-oku-tm-p[data-pid] .r-pasaj mark.r-oku-tm-secim:not([data-eylem])');
+        for (var i = 0; i < marks.length; i++) {
+          var mark = marks[i], p = mark.closest('.r-oku-tm-p[data-pid]');
+          var body = mark.closest('.r-pasaj');
+          if (!p || !body || !p.dataset.belge || !p.dataset.pid) continue;
+          var links = [];
+          try { links = app.paket.bagliFisler(p.dataset.belge, p.dataset.pid) || []; } catch (e) { continue; }
+          if (!links.length) continue;
+          var offset = 0;
+          try {
+            var range = doc.createRange(); range.selectNodeContents(body); range.setEndBefore(mark);
+            offset = range.toString().length;
+          } catch (e) { continue; }
+          var end = offset + mark.textContent.length;
+          var codes = [];
+          for (var j = 0; j < links.length; j++) {
+            var g = links[j];
+            if (!g || !g.kod || g.tam === false ||
+                !Number.isInteger(g.secimBas) || !Number.isInteger(g.secimSon) ||
+                g.secimBas < 0 || g.secimSon <= g.secimBas) continue;
+            if (g.secimBas <= offset && g.secimSon >= end && codes.indexOf(g.kod) < 0) codes.push(g.kod);
+          }
+          if (!codes.length) continue;
+          mark.dataset.eylem = 'okuP:fis';
+          mark.dataset.kod = codes[0];
+          mark.setAttribute('role', 'button');
+          mark.setAttribute('tabindex', '0');
+          mark.setAttribute('title', codes.length > 1
+            ? 'Fiş '+codes.join(', ')+' · diğer fişler alttaki rozetlerde'
+            : 'Fiş '+codes[0]+' · kimlik kartını aç');
+          mark.setAttribute('aria-label', 'Fiş '+codes[0]+' kimlik kartını aç');
+        }
+      }
 
       function sinifDugmesi(etiket, action) {
         var btn = doc.createElement('button');
@@ -968,8 +1011,10 @@ button:disabled { opacity: .6; cursor: progress; }
       doc.addEventListener('selectionchange', function () { w.requestAnimationFrame(function () { dugmeYenile(); hadisSecimHapYenile(); }); });
       if (typeof app.on === 'function') {
         app.on('ekran', function () {
-          w.requestAnimationFrame(function () { dugmeYenile(); ustFisDugmesi(); hadisUstFisDugmesi(); hadisSecimHapYenile(); });
+          w.requestAnimationFrame(function () { dugmeYenile(); ustFisDugmesi(); hadisUstFisDugmesi(); hadisSecimHapYenile(); fisliMetinBagla(); });
         });
+        app.on('oku:hadisCizildi', function () { w.requestAnimationFrame(fisliMetinBagla); });
+        app.on('veri', function (e) { if (e && (e.tur === 'fis' || e.tur === 'ek' || e.tur === 'yukle')) w.requestAnimationFrame(fisliMetinBagla); });
       }
       /* Tam metin ekranı sonradan oluşturulsa bile düğmeyi yalnız bir kez yerleştir. */
       var ekranKok = doc.getElementById('ekran') || doc.body;
@@ -978,7 +1023,7 @@ button:disabled { opacity: .6; cursor: progress; }
         new w.MutationObserver(function () {
           if (ustBekle || !app.state || (app.state.ekran !== 'okuTam' && app.state.ekran !== 'okuHadis')) return;
           ustBekle = true;
-          w.requestAnimationFrame(function () { ustBekle = false; ustFisDugmesi(); hadisUstFisDugmesi(); });
+          w.requestAnimationFrame(function () { ustBekle = false; ustFisDugmesi(); hadisUstFisDugmesi(); fisliMetinBagla(); });
         }).observe(ekranKok, { childList: true, subtree: true });
       }
       dugmeYenile();
@@ -986,6 +1031,7 @@ button:disabled { opacity: .6; cursor: progress; }
       ustFisDugmesi();
       hadisUstFisDugmesi();
       hadisSecimHapYenile();
+      fisliMetinBagla();
     } catch (e) { console.warn('[fisleme] kolaylıklar eklenemedi:', e); }
   }
 
@@ -1099,11 +1145,12 @@ function satirlar(fisler, bag, belge) {
   const records=[], ident=new Map(), same=new Map();
   for (const f of fisler || []) {
     if (!f || !f.kod) continue;
-    const links=Array.isArray(bag(f.kod)) ? bag(f.kod) : [];
+    const raw=bag(f.kod), links=Array.isArray(raw) ? raw : [];
     const rec={kod:f.kod,sarih:f.sarih||'',eser:f.eser||'',kaynak:f.kaynak||'',
       durum:'bagli',bulgular:[],links:links.filter(Boolean).map(b=>({belge:b.belge||'',pid:b.pid||'',secimBas:b.secimBas,secimSon:b.secimSon})),fiş:f};
     const add=(tur,baslik,not)=>rec.bulgular.push({tur,baslik,not:not||''});
     if (!links.length) add('teyit','Paragraf bağlantısı bulunmuyor','Eski fişlerde kaynak cilt/sayfa bilgisi bulunabilir; bu durum tek başına hata değildir.');
+    if (links.length > rec.links.length) add('hata','Boş kaynak bağlantısı kaydı','Kaynak bağlantıları arasında geçersiz ya da boş bir kayıt var.');
     for (const k of rec.links) {
       if (!k.belge || !k.pid) {add('hata','Eksik kaynak bağlantısı','Belge kimliği veya paragraf kimliği eksik.');continue;}
       const meta=belge(k.belge);
@@ -1117,7 +1164,9 @@ function satirlar(fisler, bag, belge) {
         add('hata','Seçim konumu geçersiz','Seçimin başlangıç/bitiş karakter konumları tutarsız.');
     }
     if (!String(f.ar||'').trim()) add('teyit','Arapça alıntı eksik','Fişin Arapça metni kaynakla kıyaslanamıyor.');
-    if (!String(f.kaynak||'').trim()) add('teyit','Cilt/sayfa bilgisi eksik','Matbu kaynak konumu kontrol edilmeli.');
+    const konum=String(f.kaynak||'').trim();
+    if (!konum || /^(?:metinde belirtilmemiş|belirsiz|yok|bilinmiyor|[-–—])$/i.test(konum))
+      add('teyit','Cilt/sayfa bilgisi teyit edilmeli','Kaynak konumu boş veya gerçek bir matbu cilt/sayfa bilgisi içermiyor.');
     const key=rec.links.length ? rec.links[0].belge+'|'+rec.links[0].pid+'|'+sade(f.ar) : '';
     if (key&&sade(f.ar).length>30) {
       if (same.has(key)) {
@@ -1146,16 +1195,29 @@ function ozetle(rows) {
 function derinSonuc(fis,bag,p) {
   if (!p) return {tur:'hata',baslik:'Paragraf bulunamadı',not:'İşaret edilen pid açılan belgenin iskeletinde bulunamadı.'};
   if (p.tur!=='p') return {tur:'supheli',baslik:'Bağlantı paragraf olmayan bloğa gidiyor',not:'Blok türü: '+p.tur};
-  const metin=sade(p.metin||''),alinti=sade(fis.ar||'');
-  if (!alinti) return {tur:'teyit',baslik:'Arapça alıntı bulunmuyor',not:'Alıntı yoksa dijital metin eşleşmiş sayılamaz.'};
-  if (!metin) return {tur:'teyit',baslik:'Kaynak metin boş veya okunamadı',not:'Paragraf kimliği olsa da metin doğrulaması yapılamaz.'};
-  if(alinti.length>=16 && metin && !metin.includes(alinti))
-    return {tur:'supheli',baslik:'Arapça alıntı kaynakla birebir eşleşmedi',not:'İmla, farklı nüsha, kısaltma veya yanlış eşleşme olabilir.'};
-  if(bag.secimBas!=null&&bag.secimSon!=null) {
+  // Bağlantının yapısal hatası alıntı kontrolünden önce tespit edilmelidir.
+  if (bag && bag.secimBas!=null&&bag.secimSon!=null) {
     const from=bag.secimBas,to=bag.secimSon;
     if(!Number.isInteger(from)||!Number.isInteger(to)||from<0||to<=from||to>String(p.metin||'').length)
       return {tur:'hata',baslik:'Seçim ofseti paragraf sınırının dışında',not:'Kaynak paragraf uzunluğu: '+String(p.metin||'').length};
   }
+  const metin=sade(p.metin||''),alinti=sade(fis.ar||''),raw=String(fis.ar||'');
+  if (!alinti) return {tur:'teyit',baslik:'Arapça alıntı bulunmuyor',not:'Alıntı yoksa dijital metin eşleşmiş sayılamaz.'};
+  if (!metin) return {tur:'teyit',baslik:'Kaynak metin boş veya okunamadı',not:'Paragraf kimliği olsa da metin doğrulaması yapılamaz.'};
+  // Word kaynaklı gerçek fişlerde (...) / ... / … pasajın atlanmış bölümüdür.
+  // Bu alıntılar kesintisiz bir dize gibi aranmaz ve otomatik yanlış ilan edilmez.
+  if (/\u2026|\.{3,}/.test(raw)) {
+    const parcalar=raw.split(/\u2026|\.{3,}/).map(sade).filter(q=>q.length>=10);
+    const bulunan=parcalar.filter(q=>metin.includes(q)).length;
+    return {tur:'teyit',baslik:'Kesintili Arapça alıntı',not:parcalar.length
+      ? 'Aynı paragrafta '+bulunan+'/'+parcalar.length+' anlamlı parça bulundu. Tam pasaj ve gerekirse komşu paragraflar elle teyit edilmeli.'
+      : 'Alıntı yalnız kısaltılmış parçalar içeriyor; kaynakla kesin karşılaştırma yapılamaz.'};
+  }
+  if (alinti.length<16) return {tur:'teyit',baslik:'Kısa Arapça alıntı',not:metin.includes(alinti)
+    ? 'İfade paragrafta geçiyor; ancak bu kısalıkta eşleşme tek başına kesin kanıt değildir.'
+    : 'Kısa ifade bu paragrafta bulunamadı; farklı imla veya bağlam ihtimali ayrıca incelenmeli.'};
+  if (!metin.includes(alinti))
+    return {tur:'supheli',baslik:'Arapça alıntı kaynakla birebir eşleşmedi',not:'İmla, farklı nüsha, kısaltma veya yanlış eşleşme olabilir.'};
   const exact=/^\s*(?:c\.?\s*)?(\d+)\s*\/\s*(?:s\.?\s*)?(\d+)\s*$/.exec(String(fis.kaynak||''));
   if(exact && p.cilt!=null && p.sayfa!=null && (Number(exact[1])!==Number(p.cilt)||Number(exact[2])!==Number(p.sayfa)))
     return {tur:'supheli',baslik:'Cilt/sayfa uyuşmayabilir',not:'Fiş: '+fis.kaynak+'; dijital metin: '+p.cilt+'/'+p.sayfa};
@@ -1180,9 +1242,10 @@ function kur(app,w,doc) {
       const root=h('section',null,'r-kaynak-denetim');kok.appendChild(root);
       root.appendChild(h('h2','Kaynak–Fiş Denetimi'));
       root.appendChild(h('p','Bu ekran yalnız tespit yapar; fişleri, meseleleri, kaynak bağlantılarını ve ortak kayıtları değiştirmez. Matbu teyit ayrı bir işlemdir.','r-kd-aciklama'));
+      root.appendChild(h('p','Teyit bekleyen kayıtlar kesin hata değildir. Kaynak metinleri tarayıcıda hazır değilse bu sayı doğal olarak yüksek olur; fişlerin yanlış olduğunu göstermez.','r-kd-aciklama'));
       const counts=h('div',null,'r-kd-sayaclar');root.appendChild(counts);
       const filter=h('select',null,'r-kd-filtre');
-      for(const [v,ad] of [['hepsi','Tüm fişler'],['hata','Yapısal hatalar'],['supheli','Şüpheli eşleşmeler'],['teyit','Teyit bekleyenler'],['bagli','Bağlantısı olanlar']]){
+      for(const [v,ad] of [['hepsi','Tüm fişler'],['hata','Yapısal hatalar'],['supheli','Şüpheli eşleşmeler'],['teyit','Teyit bekleyenler'],['bagli','Ön kontrolde bulgusuz'],['baglantili','Paragraf bağı olanlar'],['baglantisiz','Paragraf bağı olmayanlar']]){
         const op=h('option',ad);op.value=v;filter.appendChild(op);
       }
       filter.setAttribute('aria-label','Denetim durumu');
@@ -1194,7 +1257,7 @@ function kur(app,w,doc) {
       line(counts,'Bağlantısız',sum.baglantisiz);
       const draw=()=>{
         area.textContent='';
-        const rows=items.filter(x=>filter.value==='hepsi'||filter.value===x.durum);
+        const rows=items.filter(x=>filter.value==='hepsi'||(filter.value==='baglantili'&&x.links.length>0)||(filter.value==='baglantisiz'&&x.links.length===0)||filter.value===x.durum);
         area.appendChild(h('p',rows.length+' kayıt gösteriliyor. İlk 150 kayıt listelenir.','r-kd-not'));
         for(const rec of rows.slice(0,150)){
           const box=h('article',null,'r-kd-kayit');
