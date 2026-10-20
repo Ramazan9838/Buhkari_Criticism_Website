@@ -335,7 +335,15 @@
           return Promise.all(isler).then(function () { return { commit: commit, agac: c.tree.sha, dosyalar: dosyalar }; });
         });
       });
-    }, function (e) { if (e.durum === 404) return null; throw e; });
+    }, function (e) {
+      if (e.durum !== 404) throw e;
+      // Özel depoda GitHub yetki sorununu da 404 ile bildirir: "dal yok" demeden önce depo görünüyor mu bakılır.
+      // Görünmüyorsa bu tarayıcının kaydıyla yeni dal kurulmaya çalışılmaz; anahtar geçersiz sayılır.
+      return self.istek('GET', '').then(function () { return null; }, function (e2) {
+        if (e2.durum === 404) { var h = new Error('GitHub 404: depo bu erişim anahtarıyla görünmüyor (anahtarın depo izni ya da süresi)'); h.durum = 401; h.depoGorunmuyor = true; throw h; }
+        throw e2;
+      });
+    });
   };
   // Yeni commit; dal başka biri tarafından ilerletildiyse hata.cakisma = true (yarış: yeniden okunup birleştirilir).
   Depo.prototype.yaz = function (eski, yeni, mesaj) {
