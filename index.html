@@ -1339,6 +1339,15 @@ function satirlar(fisler, bag, belge) {
   }
   return records;
 }
+/* Köşeli Arapça alıntıdan sonraki Latin harfli matbu neşir atfı,
+   kaynak paragrafın metni değildir. Yalnız karşılaştırma kopyasından ayrılır. */
+function pilotAlinti(ar) {
+  const raw=String(ar||'').trim();
+  const x=/^[«“]([\s\S]*?)[»”](?:\s*(?:\(|$))/u.exec(raw);
+  if(x) return {metin:x[1].trim(),not:'Sondaki bibliyografik açıklama karşılaştırmaya alınmadı.'};
+  const i=raw.search(/\s+\((?:A[‘'ʼ]|Aʿl|s\.\s*\d|c\.\s*\d)/iu);
+  return {metin:i>=0?raw.slice(0,i):raw,not:i>=0?'Sondaki matbu kaynak atfı çıkarıldı.':''};
+}
 function ozetle(rows) {
   const z={toplam:rows.length,hata:0,supheli:0,teyit:0,bagli:0,baglantisiz:0};
   for(const r of rows){ z[r.durum]=(z[r.durum]||0)+1;if(!r.links.length)z.baglantisiz++; }
@@ -1422,6 +1431,75 @@ function kur(app,w,doc) {
       }
       filter.setAttribute('aria-label','Denetim durumu');
       root.appendChild(filter);
+
+      // Salt-okunur 24 fişlik Hattâbî pilotu, durdurulabilir.
+      const pilot=h('section',null,'r-kd-pilot');
+      pilot.appendChild(h('h3','Hattâbî · gerçek kaynak pilotu'));
+      pilot.appendChild(h('p','Aʿlâmü’l-hadîs kaynak metniyle ilk 24 bağlantılı fiş karşılaştırılır. Şüpheli sonuçlar kesin yanlış anlamına gelmez. Kayıtlar değişmez.','r-kd-aciklama'));
+      const kontrol=h('div',null,'r-kd-pilot-arac');
+      const baslat=h('button','İlk 24 fişi denetle','r-dugme r-dugme--hayalet'),durdur=h('button','Durdur','r-dugme r-dugme--hayalet');
+      baslat.type='button';durdur.type='button';durdur.disabled=true;
+      kontrol.appendChild(baslat);kontrol.appendChild(durdur);pilot.appendChild(kontrol);
+      const durum=h('p','Henüz başlatılmadı.','r-kd-not');durum.setAttribute('aria-live','polite');pilot.appendChild(durum);
+      const sonucList=h('div',null,'r-kd-pilot-sonuclar');pilot.appendChild(sonucList);
+      root.appendChild(pilot);
+      let calisiyor=false,iptal=false;
+      durdur.onclick=()=>{iptal=true;durdur.disabled=true;};
+      baslat.onclick=async()=>{
+        if(calisiyor)return;
+        const id='SRC-HTB-ALAM',kaynak=app.paket&&app.paket.belge(id);
+        if(!kaynak||!kaynak.yerel){
+          durum.textContent='Hattâbî kaynak paketi bu tarayıcıda henüz hazır değil. Oku bölümünden kaynağı yükledikten sonra tekrar deneyin.';
+          return;
+        }
+        const aday=items.filter(r=>r.links.some(b=>b.belge===id)).sort((a,b)=>a.kod.localeCompare(b.kod,'en')).slice(0,24);
+        if(!aday.length){durum.textContent='Hattâbî kaynağına bağlı fiş bulunamadı.';return;}
+        calisiyor=true;iptal=false;baslat.disabled=true;durdur.disabled=false;sonucList.textContent='';
+        const say={uyum:0,supheli:0,teyit:0,hata:0};let sayi=0;
+        try{
+          for(const r of aday){
+            if(iptal||!pilot.isConnected)break;
+            const f=app.veri.fis(r.kod);
+            if(!f){say.teyit++;sayi++;continue;}
+            for(const bag of r.links.filter(x=>x.belge===id&&x.pid)){
+              if(iptal||!pilot.isConnected)break;
+              let p=null,sonuc;
+              try{
+                p=await app.paket.paragraf(bag.belge,bag.pid);
+                const temiz=pilotAlinti(f.ar);
+                sonuc=derinSonuc({...f,ar:temiz.metin},bag,p);
+                if(temiz.not)sonuc={...sonuc,not:sonuc.not+' '+temiz.not};
+              }catch(e){sonuc={tur:'teyit',baslik:'Kaynak okunamadı',not:String(e&&e.message||e)};}
+              if(iptal||!pilot.isConnected)break;
+              const sinif=Object.prototype.hasOwnProperty.call(say,sonuc.tur)?sonuc.tur:'teyit';
+              say[sinif]++;
+              const satir=h('article',null,'r-kd-kayit r-kd-pilot-kayit');
+              satir.appendChild(h('strong',r.kod+' · '+sonuc.baslik));
+              satir.appendChild(h('p',sonuc.not,'r-kd-bulgu'));
+              const kimlik=h('button','Fiş kimlik kartını aç','r-dugme r-dugme--hayalet r-dugme--kucuk');
+              kimlik.type='button';
+              kimlik.onclick=()=>{
+                if(typeof app.nesne==='function'&&app.cekmece&&app.cekmece.ac){
+                  app.nesne({tur:'fis',id:r.kod});app.cekmece.ac('kimlik',{kaynak:'fare',sonOdak:kimlik});
+                }
+              };
+              satir.appendChild(kimlik);
+              if(p){
+                const det=h('details');
+                det.appendChild(h('summary','Kaynak Arapça paragrafı · '+bag.pid));
+                det.appendChild(h('p',String(p.metin||'').slice(0,1200),'r-kd-arapca'));
+                satir.appendChild(det);
+              }
+              sonucList.appendChild(satir);
+            }
+            sayi++;
+            durum.textContent='Fiş '+sayi+'/'+aday.length+' · Uyum '+say.uyum+' · Şüpheli '+say.supheli+' · Teyit '+say.teyit+' · Yapısal hata '+say.hata;
+            await new Promise(resolve=>w.requestAnimationFrame(resolve));
+          }
+          durum.textContent=(iptal?'Durduruldu. ':'Pilot tamamlandı. ')+durum.textContent;
+        }finally{calisiyor=false;baslat.disabled=false;durdur.disabled=true;}
+      };
+
       const area=h('div',null,'r-kd-sonuclar');root.appendChild(area);
       const items=get(),sum=ozetle(items);
       line(counts,'Fiş',sum.toplam);line(counts,'Yapısal hata',sum.hata);
@@ -1493,10 +1571,10 @@ function kur(app,w,doc) {
   app.on('ekran',()=>w.requestAnimationFrame(baglantiEkle));
   app.on('hazir',baglantiEkle);
   const css=doc.createElement('style');
-  css.textContent='.r-kaynak-denetim{max-width:1050px;margin:0 auto;padding:16px}.r-kd-aciklama,.r-kd-not{color:var(--r-soluk,#666)}.r-kd-sayaclar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.r-kd-sayi,.r-kd-durum{padding:4px 7px;border:1px solid var(--r-cizgi,#ddd);border-radius:5px}.r-kd-filtre{margin:10px 0;padding:8px}.r-kd-kayit{padding:12px 4px;border-bottom:1px solid var(--r-cizgi,#ddd)}.r-kd-kayit>a{font-weight:600}.r-kd-durum{margin-inline-start:12px;font-size:12px}.r-kd-bulgu,.r-kd-derin{margin:5px 0;font-size:13px}.r-kd-giris{margin:10px 0 15px}.r-kd-bag{margin:10px 0}.r-kd-kaynak{display:block;font-size:12px;color:var(--r-soluk,#666);overflow-wrap:anywhere;margin-bottom:3px}.r-kd-kanıt{background:var(--r-yuzey,#fff);padding:8px 12px;border:1px solid var(--r-cizgi,#ddd);border-radius:6px;margin:8px 0}.r-kd-kanıt strong{display:block;font-size:12px}.r-kd-arapca{font-size:16px;direction:rtl;text-align:right;line-height:1.9;font-family:var(--r-yazi-ar,serif);overflow-wrap:anywhere;margin:4px 0 9px}.r-kd-derin--supheli{border-inline-start:3px solid #b47815;padding-inline-start:8px}.r-kd-derin--uyum{border-inline-start:3px solid var(--r-vurgu,#578);padding-inline-start:8px}';
+  css.textContent='.r-kd-pilot{margin:20px 0;padding:12px;border:1px solid var(--r-cizgi,#ddd);border-radius:8px}.r-kd-pilot-arac{display:flex;gap:8px;flex-wrap:wrap}.r-kd-pilot-kayit details{margin:8px 0}.r-kaynak-denetim{max-width:1050px;margin:0 auto;padding:16px}.r-kd-aciklama,.r-kd-not{color:var(--r-soluk,#666)}.r-kd-sayaclar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.r-kd-sayi,.r-kd-durum{padding:4px 7px;border:1px solid var(--r-cizgi,#ddd);border-radius:5px}.r-kd-filtre{margin:10px 0;padding:8px}.r-kd-kayit{padding:12px 4px;border-bottom:1px solid var(--r-cizgi,#ddd)}.r-kd-kayit>a{font-weight:600}.r-kd-durum{margin-inline-start:12px;font-size:12px}.r-kd-bulgu,.r-kd-derin{margin:5px 0;font-size:13px}.r-kd-giris{margin:10px 0 15px}.r-kd-bag{margin:10px 0}.r-kd-kaynak{display:block;font-size:12px;color:var(--r-soluk,#666);overflow-wrap:anywhere;margin-bottom:3px}.r-kd-kanıt{background:var(--r-yuzey,#fff);padding:8px 12px;border:1px solid var(--r-cizgi,#ddd);border-radius:6px;margin:8px 0}.r-kd-kanıt strong{display:block;font-size:12px}.r-kd-arapca{font-size:16px;direction:rtl;text-align:right;line-height:1.9;font-family:var(--r-yazi-ar,serif);overflow-wrap:anywhere;margin:4px 0 9px}.r-kd-derin--supheli{border-inline-start:3px solid #b47815;padding-inline-start:8px}.r-kd-derin--uyum{border-inline-start:3px solid var(--r-vurgu,#578);padding-inline-start:8px}';
   doc.head.appendChild(css);
 }
-const api={sade,satirlar,ozetle,derinSonuc,kur};
+const api={sade,satirlar,ozetle,derinSonuc,pilotAlinti,kur};
 g.RahleKaynakDenetimi=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(g.App&&g.document)kur(g.App,g,g.document);
