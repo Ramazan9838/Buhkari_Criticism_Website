@@ -1,0 +1,48 @@
+name: Dal temizliği
+
+# PR birleşince dalını siler (GitHub'ın "Automatically delete head branches" ayarının yaptığını yapar).
+# Actions › Dal temizliği › Run workflow: main'in tamamen içinde olan bütün eski dalları tek seferde siler.
+# main ve ortak-kayit hiçbir zaman silinmez. Mantık: .github/dal_temizle.sh
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      deneme:
+        description: 'Yalnız listele, hiçbir dalı silme'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dal-temizligi
+  cancel-in-progress: false
+
+jobs:
+  temizle:
+    name: Birleşmiş dalları sil
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    steps:
+      - name: Depoyu çek
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Birleşen PR'ın dalını sil
+        if: github.event_name == 'pull_request'
+        env:
+          DAL: ${{ github.event.pull_request.head.ref }}
+        run: sh .github/dal_temizle.sh pr "$DAL"
+      - name: main'e birleşmiş bütün dalları sil
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          DENEME: ${{ inputs.deneme && '1' || '0' }}
+        run: sh .github/dal_temizle.sh toplu
