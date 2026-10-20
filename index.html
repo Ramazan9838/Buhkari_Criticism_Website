@@ -1404,6 +1404,34 @@ function derinSonuc(fis,bag,p) {
     not:'Bu sonuç matbu neşir teyidi değildir; hadis değerlendirmesinin ilmî doğrulaması anlamına gelmez.',
     kanit:secimVar?{seciliMetin:seciliMetin.slice(0,300),alinti:String(fis.ar||'').slice(0,300)}:null};
 }
+
+/* Bağlı paragrafta tek başına bulunmayan alıntı, önceki/sonraki paragraflarla
+ * bitişik okunduğunda tam olarak eşleşebilir. Bu, kaynağın hatalı olduğu
+ * anlamına gelmez; fişin kapsamını araştırmacı teyit etmelidir.
+ * Esas derinSonuc fonksiyonu ve araştırma verisi değiştirilmez. */
+function baglamSonucu(fis,bag,p,onceki,sonraki,ilk) {
+  const sonuc=ilk||derinSonuc(fis,bag,p);
+  if(!p||sonuc.tur!=='supheli')return sonuc;
+  const q=sade(pilotAlinti(fis&&fis.ar).metin);
+  if(q.length<16||/…|\.{3,}/.test(String(fis&&fis.ar||'')))return sonuc;
+  const komsular=[onceki,sonraki].filter(v=>v&&v.tur==='p');
+  if(!komsular.length)return sonuc;
+  const metin=sade(p.metin||'');
+  if(metin.includes(q))return sonuc;
+  const tekKomsudaVar=komsular.some(v=>sade(v.metin||'').includes(q));
+  // Alıntı bütünüyle yanlış komşu paragrafa bağlıysa "sınıra yayıldı"
+  // denemez: bu kayıt ayrı kaynak-bağı şüphesi olarak kalır.
+  if(tekKomsudaVar)return sonuc;
+  const birlesik=sade([onceki,p,sonraki].filter(v=>v&&v.tur==='p').map(v=>v.metin).join(' '));
+  if(!birlesik.includes(q))return sonuc;
+  return {
+    tur:'teyit',
+    baslik:'Alıntı komşu paragraflara yayılıyor',
+    not:'Alıntı bağlantılı paragrafın tek başına içinde değil, bitişik kaynak paragrafları birlikte okunduğunda bulunuyor. Paragraf kapsamı ve fişte seçilen metin elle teyit edilmeli; bu otomatik düzeltme veya matbu neşir doğrulaması değildir.',
+    kanit:sonuc.kanit||null
+  };
+}
+
 function kur(app,w,doc) {
   if (!app || !app.ekran || app.kaynakFisDenetimi) return;
   const get=()=>satirlar(app.VERI.fisler||[],
@@ -1463,18 +1491,24 @@ function kur(app,w,doc) {
             if(!f){say.teyit++;sayi++;continue;}
             for(const bag of r.links.filter(x=>x.belge===id&&x.pid)){
               if(iptal||!pilot.isConnected)break;
-              let p=null,sonuc;
+              let p=null,sonuc,oncekiParagraf=null,sonrakiParagraf=null;
               try{
                 p=await app.paket.paragraf(bag.belge,bag.pid);
                 const temiz=pilotAlinti(f.ar);
-                sonuc=derinSonuc({...f,ar:temiz.metin},bag,p);
+                const geciciFis={...f,ar:temiz.metin};
+                sonuc=derinSonuc(geciciFis,bag,p);
+                if(p&&sonuc.tur==='supheli'){
+                  oncekiParagraf=p.onceki?await app.paket.paragraf(bag.belge,p.onceki):null;
+                  sonrakiParagraf=p.sonraki?await app.paket.paragraf(bag.belge,p.sonraki):null;
+                  sonuc=baglamSonucu(geciciFis,bag,p,oncekiParagraf,sonrakiParagraf,sonuc);
+                }
                 if(temiz.not)sonuc={...sonuc,not:sonuc.not+' '+temiz.not};
               }catch(e){sonuc={tur:'teyit',baslik:'Kaynak okunamadı',not:String(e&&e.message||e)};}
               if(iptal||!pilot.isConnected)break;
               const sinif=Object.prototype.hasOwnProperty.call(say,sonuc.tur)?sonuc.tur:'teyit';
               say[sinif]++;
               const satir=h('article',null,'r-kd-kayit r-kd-pilot-kayit');
-              satir.appendChild(h('strong',r.kod+' · '+sonuc.baslik));
+              satir.appendChild(h('strong',r.kod+' · '+sinif+' · '+sonuc.baslik));
               satir.appendChild(h('p',sonuc.not,'r-kd-bulgu'));
               const kimlik=h('button','Fiş kimlik kartını aç','r-dugme r-dugme--hayalet r-dugme--kucuk');
               kimlik.type='button';
@@ -1486,8 +1520,26 @@ function kur(app,w,doc) {
               satir.appendChild(kimlik);
               if(p){
                 const det=h('details');
-                det.appendChild(h('summary','Kaynak Arapça paragrafı · '+bag.pid));
-                det.appendChild(h('p',String(p.metin||'').slice(0,1200),'r-kd-arapca'));
+                det.appendChild(h('summary','Fiş alıntısı, işaretli aralık ve kaynak paragrafını karşılaştır'));
+                det.appendChild(h('strong','Fişin Arapça alıntısı'));
+                det.appendChild(h('p',String(f.ar||'').slice(0,1400),'r-kd-arapca'));
+                if(Number.isInteger(bag.secimBas)&&Number.isInteger(bag.secimSon)
+                    &&bag.secimBas>=0&&bag.secimSon>bag.secimBas&&bag.secimSon<=p.metin.length){
+                  det.appendChild(h('strong','Kaynakta kaydedilmiş işaretli bölüm'));
+                  det.appendChild(h('p',p.metin.slice(bag.secimBas,bag.secimSon),'r-kd-arapca'));
+                }
+                det.appendChild(h('strong','Bağlı kaynak paragrafı · '+bag.pid));
+                det.appendChild(h('p',String(p.metin||'').slice(0,1800),'r-kd-arapca'));
+                if(sonuc.baslik==='Alıntı komşu paragraflara yayılıyor'){
+                  if(oncekiParagraf){
+                    det.appendChild(h('strong','Önceki Arapça paragraf'));
+                    det.appendChild(h('p',String(oncekiParagraf.metin||'').slice(-1200),'r-kd-arapca'));
+                  }
+                  if(sonrakiParagraf){
+                    det.appendChild(h('strong','Sonraki Arapça paragraf'));
+                    det.appendChild(h('p',String(sonrakiParagraf.metin||'').slice(0,1200),'r-kd-arapca'));
+                  }
+                }
                 satir.appendChild(det);
               }
               sonucList.appendChild(satir);
@@ -1574,7 +1626,7 @@ function kur(app,w,doc) {
   css.textContent='.r-kd-pilot{margin:20px 0;padding:12px;border:1px solid var(--r-cizgi,#ddd);border-radius:8px}.r-kd-pilot-arac{display:flex;gap:8px;flex-wrap:wrap}.r-kd-pilot-kayit details{margin:8px 0}.r-kaynak-denetim{max-width:1050px;margin:0 auto;padding:16px}.r-kd-aciklama,.r-kd-not{color:var(--r-soluk,#666)}.r-kd-sayaclar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.r-kd-sayi,.r-kd-durum{padding:4px 7px;border:1px solid var(--r-cizgi,#ddd);border-radius:5px}.r-kd-filtre{margin:10px 0;padding:8px}.r-kd-kayit{padding:12px 4px;border-bottom:1px solid var(--r-cizgi,#ddd)}.r-kd-kayit>a{font-weight:600}.r-kd-durum{margin-inline-start:12px;font-size:12px}.r-kd-bulgu,.r-kd-derin{margin:5px 0;font-size:13px}.r-kd-giris{margin:10px 0 15px}.r-kd-bag{margin:10px 0}.r-kd-kaynak{display:block;font-size:12px;color:var(--r-soluk,#666);overflow-wrap:anywhere;margin-bottom:3px}.r-kd-kanıt{background:var(--r-yuzey,#fff);padding:8px 12px;border:1px solid var(--r-cizgi,#ddd);border-radius:6px;margin:8px 0}.r-kd-kanıt strong{display:block;font-size:12px}.r-kd-arapca{font-size:16px;direction:rtl;text-align:right;line-height:1.9;font-family:var(--r-yazi-ar,serif);overflow-wrap:anywhere;margin:4px 0 9px}.r-kd-derin--supheli{border-inline-start:3px solid #b47815;padding-inline-start:8px}.r-kd-derin--uyum{border-inline-start:3px solid var(--r-vurgu,#578);padding-inline-start:8px}';
   doc.head.appendChild(css);
 }
-const api={sade,satirlar,ozetle,derinSonuc,pilotAlinti,kur};
+const api={sade,satirlar,ozetle,derinSonuc,baglamSonucu,pilotAlinti,kur};
 g.RahleKaynakDenetimi=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(g.App&&g.document)kur(g.App,g,g.document);
