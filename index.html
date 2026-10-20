@@ -527,7 +527,7 @@ button:disabled { opacity: .6; cursor: progress; }
 
       var stil = doc.createElement('style');
       stil.id = 'rahle-hadis-serh-katla';
-      stil.textContent = '.r-oku-hd-bolum__icerik { display:grid; grid-template-columns:minmax(0,1fr); gap:var(--r-s8); min-width:0; }.r-oku-hd-bolum__icerik[hidden] {display:none!important;}.r-oku-hd-katla {margin-inline-start:auto;white-space:nowrap;}.r-oku-hd-fis-rozet{display:inline-flex;align-items:center;justify-content:center;min-height:26px;padding:2px 9px;margin-inline-start:auto;border:1px solid var(--r-cizgi);border-radius:6px;color:var(--r-murekkep);background:var(--r-kagit);font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer}.r-oku-hd-fis-rozet:hover,.r-oku-hd-fis-rozet:focus-visible{border-color:var(--r-vurgu)}.r-oku-hd-fis-rozet+.r-oku-hd-katla{margin-inline-start:0}';
+      stil.textContent = '.r-oku-hd-bolum__icerik { display:grid; grid-template-columns:minmax(0,1fr); gap:var(--r-s8); min-width:0; }.r-oku-hd-bolum__icerik[hidden] {display:none;}.r-oku-hd-katla {margin-inline-start:auto;white-space:nowrap;}.r-oku-hd-fis-rozet{display:inline-flex;align-items:center;justify-content:center;min-height:26px;padding:2px 9px;margin-inline-start:auto;border:1px solid var(--r-cizgi);border-radius:6px;color:var(--r-murekkep);background:var(--r-kagit);font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer}.r-oku-hd-fis-rozet:hover,.r-oku-hd-fis-rozet:focus-visible{border-color:var(--r-vurgu)}.r-oku-hd-fis-rozet+.r-oku-hd-katla{margin-inline-start:0}';
       doc.head.appendChild(stil);
 
       /* Fiş rozeti görünür parçalarla sınırlanmaz: bütün blok aralığı
@@ -704,11 +704,11 @@ button:disabled { opacity: .6; cursor: progress; }
         '@media screen and (min-width: 900px) {.r-ekran[data-ekran="oku"] .r-oku-ust {position:sticky;top:0;right:auto;width:100%;margin:0 0 var(--r-s8);padding:var(--r-s4) 0;z-index:var(--r-z-yapisik);background:var(--r-kagit);border-bottom:1px solid var(--r-cizgi);align-content:start}.r-ekran[data-ekran="oku"] .r-oku-ust__satir {flex-wrap:nowrap}}' +
         '.r-kimlik-paragraf__fis {display:grid;gap:var(--r-s4);padding-bottom:var(--r-s8)}.r-kimlik-paragraf__fis .r-dugme-grubu {justify-content:flex-start}.r-kimlik-paragraf__eylem {margin-block:var(--r-s8)}' +
         '.r-oku-hap .r-oku-hap__ekle {min-width:34px;font-size:var(--r-b18);font-weight:600}' +
-        '.r-oku-tm-secim[data-eylem="okuP:fis"]{background:#ffef83;color:#2c270f;border-radius:3px;cursor:pointer;padding-inline:1px;-webkit-box-decoration-break:clone;box-decoration-break:clone}' +
-        '.r-oku-tm-secim[data-eylem="okuP:fis"]:hover,.r-oku-tm-secim[data-eylem="okuP:fis"][data-etkin="1"]{background:#ffdc4d;color:#26200a}' +
+        '.r-oku-tm-secim[data-eylem="okuP:fis"]{background:color-mix(in srgb,var(--r-bekliyor) 24%,transparent);color:inherit;border-radius:3px;cursor:pointer;padding-inline:1px;-webkit-box-decoration-break:clone;box-decoration-break:clone}' +
+        '.r-oku-tm-secim[data-eylem="okuP:fis"]:hover,.r-oku-tm-secim[data-eylem="okuP:fis"][data-etkin="1"]{background:color-mix(in srgb,var(--r-bekliyor) 40%,transparent)}' +
         '.r-oku-tm-secim[data-eylem="okuP:fis"]:focus-visible{outline:2px solid var(--r-vurgu);outline-offset:2px}' +
-        '.r-oku-tm-secim[data-eylem="okuP:fisListe"]{background:#ffef83;color:#2c270f;border-radius:3px;cursor:pointer;-webkit-box-decoration-break:clone;box-decoration-break:clone}' +
-        '.r-oku-tm-secim[data-eylem="okuP:fisListe"]:hover{background:#ffdc4d;color:#26200a}' +
+        '.r-oku-tm-secim[data-eylem="okuP:fisListe"]{background:color-mix(in srgb,var(--r-bekliyor) 24%,transparent);color:inherit;border-radius:3px;cursor:pointer;-webkit-box-decoration-break:clone;box-decoration-break:clone}' +
+        '.r-oku-tm-secim[data-eylem="okuP:fisListe"]:hover{background:color-mix(in srgb,var(--r-bekliyor) 40%,transparent)}' +
         '.r-oku-tm-secim[data-eylem="okuP:fisListe"]:focus-visible{outline:2px solid var(--r-vurgu);outline-offset:2px}' +
         '.r-oku-fis-secici{position:fixed;z-index:10000;width:min(340px,calc(100vw - 20px));max-height:min(50vh,340px);overflow-y:auto;background:var(--r-yuzey);color:var(--r-murekkep);border:1px solid var(--r-cizgi);border-radius:var(--r-kose-4);box-shadow:var(--r-golge);padding:8px;direction:ltr;text-align:left}' +
         '.r-oku-fis-secici__bas{font-size:13px;font-weight:700;padding:4px;color:var(--r-soluk)}' +
@@ -1191,13 +1191,15 @@ button:disabled { opacity: .6; cursor: progress; }
   function rahleKutuphaneKur(app,w,doc) {
 'use strict';
 if (!app || !app.paket || app.kutuphane || !doc || !doc.body) return;
-const pk=app.paket, key='rahle.kutuphane.duraklat';
+// Anahtar bilerek 'rahle.' önekli değil: Rahle'nin deposu o önekteki tanımadığı anahtarları açılışta IndexedDB'ye taşıyıp
+// localStorage'dan siler; o zaman "Duraklat" tercihi yeniden yüklemede kaybolurdu.
+const pk=app.paket, key='rahleKutuphane.duraklat';
 const mobile=typeof app.mobil==='function' && app.mobil();
-let mode='bekliyor',phase='',done=0,total=0,progress=0,error='',controller=null,promise=null,hidden=false,hideTimer=null;
+let mode='bekliyor',phase='',done=0,total=0,progress=0,error='',controller=null,promise=null,hidden=false,hideTimer=null,otomatik=false;
 function paused(){try{return w.localStorage.getItem(key)==='1'}catch(e){return false}}
 function pauseStore(v){try{if(v)w.localStorage.setItem(key,'1');else w.localStorage.removeItem(key)}catch(e){}}
 const style=doc.createElement('style');style.id='rahle-kutuphane-stil';
-style.textContent='#rahle-kutuphane-panel{position:fixed;left:max(10px,var(--r-ray-w,0px));bottom:calc(var(--r-durum-h,22px) + 10px);width:min(340px,calc(100vw - 24px));padding:10px 12px;background:var(--r-yuzey);color:var(--r-murekkep);border:1px solid var(--r-cizgi);border-radius:8px;box-shadow:var(--r-golge);z-index:var(--r-z-yapisik,50);font-size:12px;display:grid;gap:8px}#rahle-kutuphane-panel[hidden]{display:none!important}#rahle-kutuphane-panel .bar{height:4px;background:var(--r-cizgi);border-radius:8px;overflow:hidden}#rahle-kutuphane-panel .bar i{height:100%;width:0;display:block;background:var(--r-vurgu)}#rahle-kutuphane-panel .actions{display:flex;gap:8px;align-items:center}#rahle-kutuphane-panel .status{color:var(--r-soluk);overflow-wrap:anywhere}@media(max-width:700px){#rahle-kutuphane-panel{left:10px;bottom:calc(var(--r-durum-h,22px) + 65px)}}';
+style.textContent='#rahle-kutuphane-panel{position:fixed;left:max(10px,var(--r-ray-w,0px));bottom:calc(var(--r-durum-h,22px) + 10px);width:min(340px,calc(100vw - 24px));padding:10px 12px;background:var(--r-yuzey);color:var(--r-murekkep);border:1px solid var(--r-cizgi);border-radius:8px;box-shadow:var(--r-golge);z-index:var(--r-z-yapisik,50);font-size:12px;display:grid;gap:8px}#rahle-kutuphane-panel[hidden]{display:none}#rahle-kutuphane-panel .bar{height:4px;background:var(--r-cizgi);border-radius:8px;overflow:hidden}#rahle-kutuphane-panel .bar i{height:100%;width:0;display:block;background:var(--r-vurgu)}#rahle-kutuphane-panel .actions{display:flex;gap:8px;align-items:center}#rahle-kutuphane-panel .status{color:var(--r-soluk);overflow-wrap:anywhere}@media(max-width:700px){#rahle-kutuphane-panel{left:10px;bottom:calc(var(--r-durum-h,22px) + 65px)}}';
 doc.head.appendChild(style);
 const box=doc.createElement('aside');box.id='rahle-kutuphane-panel';box.setAttribute('aria-label','Kaynak kütüphanesi hazırlığı');
 const title=doc.createElement('strong');title.textContent='Kaynak kütüphanesi';
@@ -1226,7 +1228,7 @@ async function prepare() {
   await pk.kesfet();
   if(pk.durum().bellekKipi)throw new Error('Tarayıcı verileri kalıcı saklayamıyor. Sistem › Kaynak bölümünü kontrol edin');
   const src=pk.kaynaklar.yayin()||pk.kaynaklar.sunucu();
-  if(!src)throw new Error('İndirme kaynağı bulunamadı');
+  if(!src)throw Object.assign(new Error('İndirme kaynağı bulunamadı'),{kod:'kaynakYok'});
   const man=await src.liste();
   if(!man||!Array.isArray(man.belgeler)||!man.belgeler.length)throw new Error('Kaynak manifesti bulunamadı');
   const docs=man.belgeler.slice(), all=docs.slice();
@@ -1256,18 +1258,21 @@ function start(){
   pauseStore(false);hidden=false;w.clearTimeout(hideTimer);
   controller=new w.AbortController();mode='calisiyor';error='';done=0;total=0;progress=0;refresh();
   promise=prepare().catch(e=>{
+    // Kendiliğinden başlatılan hazırlıkta indirme kaynağı yoksa (index.html doğrudan açıldı) kutu metnin üstünde kalmaz.
+    if(otomatik&&e&&e.kod==='kaynakYok'){mode='bekliyor';error='';refresh();return}
     mode=(controller&&controller.signal.aborted)||(e&&(e.name==='AbortError'||e.kod==='iptal'))?'durdu':'hata';
     error=e&&e.message||String(e);refresh();
-  }).finally(()=>{promise=null;controller=null});
+  }).finally(()=>{promise=null;controller=null;otomatik=false});
   return promise;
 }
 function stop(){pauseStore(true);if(controller)controller.abort();mode='durdu';refresh()}
-button.addEventListener('click',()=>{if(mode==='calisiyor')stop();else start()});
+button.addEventListener('click',()=>{otomatik=false;if(mode==='calisiyor')stop();else start()});
 dismiss.addEventListener('click',()=>{hidden=true;box.hidden=true});
 app.kutuphane={basla:start,durdur:stop,durum:()=>({durum:mode,asama:phase,biten:done,toplam:total,hata:error}),goster:()=>{hidden=false;refresh()}};
-if(paused()){mode='durdu';refresh()}
-else if(mobile)refresh();
-else w.setTimeout(()=>{if(box.isConnected&&mode==='bekliyor')start()},1600);
+// İlk çizim hemen yapılır: masaüstünde bekleme anında boş kutu görünmez.
+if(paused())mode='durdu';
+refresh();
+if(!paused()&&!mobile)w.setTimeout(()=>{if(box.isConnected&&mode==='bekliyor'){otomatik=true;start()}},1600);
 }
 
   /* Şifreli canlı uygulamanın iframe'inde tek kaynaklı denetimi başlatır.
@@ -1477,11 +1482,110 @@ function lafizKaniti(ar,p,bag) {
   };
 }
 
+
+/* Karar sicili, kaynak-fiș tespitlerinden ve ortak-kayıt deposundan AYRIDIR.
+ * Sadece bellekte çalışır; kullanıcı açıkça JSON dışa aktarmadıkça
+ * localStorage, IndexedDB, sunucu veya araştırma verisine yazmaz.
+ * İthal işleminde çakışan kararlar sessizce üzerine yazılmaz. */
+function kararSicili() {
+  const ALANLAR=['kod','belge','pid','dijitalDurum','karar','matbuDurum',
+    'matbuSayfa','matbuDelil','gerekce','inceleyen'];
+  const kararlar=['bekliyor','uyumlu','incele','duzeltme'];
+  const matbu=['bekliyor','teyit','uyusmazlik'];
+  const digital=['uyum','supheli','teyit','hata','bagli'];
+  const veri=new Map();
+  const key=(k,b,p)=>JSON.stringify([k,b,p]);
+  const temiz=(v,max=3000)=>{
+    if(typeof v!=='string')throw new Error('Karar alanı metin olmalı');
+    if(v.length>max)throw new Error('Karar alanı çok uzun');
+    return v.trim();
+  };
+  function alanlar(x){
+    if(!x||typeof x!=='object'||Array.isArray(x))throw new Error('Karar nesnesi geçersiz');
+    const o={};
+    for(const n of ALANLAR)o[n]=temiz(x[n]??'',n==='gerekce'||n==='matbuDelil'?3000:240);
+    for(const n of ['kod','belge','pid'])if(!o[n])throw new Error('Fiş ve kaynak kimliği zorunlu');
+    if(!kararlar.includes(o.karar))throw new Error('Araştırmacı kararı geçersiz');
+    if(!matbu.includes(o.matbuDurum))throw new Error('Matbu teyit durumu geçersiz');
+    if(!digital.includes(o.dijitalDurum))throw new Error('Dijital durum geçersiz');
+    if(o.matbuDurum!=='bekliyor'&&(!o.matbuSayfa||!o.matbuDelil))
+      throw new Error('Matbu hükmü için basılı sayfa ve Arapça delil zorunlu');
+    if(o.karar!=='bekliyor'&&!o.gerekce)
+      throw new Error('Araştırmacı kararı için gerekçe zorunlu');
+    if(o.matbuDurum==='bekliyor'&&(o.matbuSayfa||o.matbuDelil))
+      throw new Error('Matbu delil girildiyse önce matbu durumu seçin');
+    return o;
+  }
+  function incele(e){
+    if(!e||typeof e!=='object'||Array.isArray(e))throw new Error('Sicil kaydı geçersiz');
+    const ref=alanlar(e.son);
+    if(!Array.isArray(e.gecmis)||!e.gecmis.length||e.gecmis.length>200)
+      throw new Error('Karar geçmişi eksik veya çok uzun');
+    let once=null;
+    const gecmis=e.gecmis.map(g=>{
+      if(!g||typeof g!=='object'||Array.isArray(g)||typeof g.tarih!=='string'||
+        g.tarih.length>40||!Number.isFinite(Date.parse(g.tarih)))
+          throw new Error('Karar geçmişi tarih hatası');
+      const karar=alanlar(g.karar);
+      if(once && key(karar.kod,karar.belge,karar.pid)!==key(once.kod,once.belge,once.pid))
+        throw new Error('Sicilde aynı fiş-bağ için farklı kimlikler');
+      once=karar;
+      return {tarih:g.tarih,karar};
+    });
+    const son=gecmis[gecmis.length-1].karar;
+    if(JSON.stringify(son)!==JSON.stringify(ref))
+      throw new Error('Karar geçmişi ve güncel karar tutarsız');
+    return {anahtar:key(ref.kod,ref.belge,ref.pid),son:ref,gecmis};
+  }
+  const liste=()=>[...veri.values()].map(x=>JSON.parse(JSON.stringify(x)));
+  const bul=(k,b,p)=>{
+    const x=veri.get(key(k,b,p));
+    return x?JSON.parse(JSON.stringify(x)):null;
+  };
+  const kaydet=(taslak,tarih)=>{
+    const son=alanlar(taslak);
+    const k=key(son.kod,son.belge,son.pid);
+    const eskisi=veri.get(k);
+    const at=new Date(tarih===undefined?Date.now():tarih);
+    if(!Number.isFinite(at.getTime()))throw new Error('Karar tarihi geçersiz');
+    const gelen={tarih:at.toISOString(),karar:son};
+    const yeni={anahtar:k,son,gecmis:eskisi?[...eskisi.gecmis,gelen]:[gelen]};
+    if(yeni.gecmis.length>200)throw new Error('200 adım geçmiş sınırına ulaşıldı');
+    veri.set(k,yeni);
+    return bul(son.kod,son.belge,son.pid);
+  };
+  const disaAktar=()=>JSON.stringify({
+    tur:'rahle.kaynak-denetim.karar-sicili',surum:1,
+    kayitlar:liste()
+  },null,2)+'\n';
+  const iceAktar=(raw)=>{
+    if(typeof raw!=='string'||raw.length>2000000)throw new Error('JSON dosyası geçersiz veya çok büyük');
+    const obj=JSON.parse(raw);
+    if(!obj||obj.tur!=='rahle.kaynak-denetim.karar-sicili'||
+       obj.surum!==1||!Array.isArray(obj.kayitlar)||obj.kayitlar.length>5000)
+      throw new Error('Rahле karar sicili formatı veya sürümü geçersiz');
+    const gecici=new Map();
+    for(const rawEntry of obj.kayitlar){
+      const entry=incele(rawEntry);
+      if(entry.anahtar!==rawEntry.anahtar||gecici.has(entry.anahtar))
+        throw new Error('Tekrarlı veya kimliği uyuşmayan sicil kaydı');
+      const eski=veri.get(entry.anahtar);
+      if(eski&&JSON.stringify(eski)!==JSON.stringify(entry))
+        throw new Error('Çakışan karar geçmişi bulundu; hiçbir kayıt içe aktarılmadı');
+      gecici.set(entry.anahtar,entry);
+    }
+    for(const [k,e] of gecici)veri.set(k,e);
+    return gecici.size;
+  };
+  return {kaydet,bul,liste,disaAktar,iceAktar};
+}
+
 function kur(app,w,doc) {
   if (!app || !app.ekran || app.kaynakFisDenetimi) return;
   const get=()=>satirlar(app.VERI.fisler||[],
     kod=>app.veri.baglanti(kod),id=>app.paket&&app.paket.belge(id));
-  app.kaynakFisDenetimi={hesapla:get,ozetle,derinSonuc, surum:1};
+  const sicil=kararSicili();
+  app.kaynakFisDenetimi={hesapla:get,ozetle,derinSonuc,sicil,surum:2};
   const h=(tag,metin,cl)=>{
     const e=doc.createElement(tag);if(cl)e.className=cl;
     if(metin!=null)e.textContent=String(metin);return e;
@@ -1497,6 +1601,100 @@ function kur(app,w,doc) {
       root.appendChild(h('h2','Kaynak–Fiş Denetimi'));
       root.appendChild(h('p','Bu ekran yalnız tespit yapar; fişleri, meseleleri, kaynak bağlantılarını ve ortak kayıtları değiştirmez. Matbu teyit ayrı bir işlemdir.','r-kd-aciklama'));
       root.appendChild(h('p','Teyit bekleyen kayıtlar kesin hata değildir. Kaynak metinleri tarayıcıda hazır değilse bu sayı doğal olarak yüksek olur; fişlerin yanlış olduğunu göstermez.','r-kd-aciklama'));
+
+      const sicilYenile=[];
+      const sicilKutusu=h('section',null,'r-kd-karar-sicili');
+      sicilKutusu.appendChild(h('h3','Araştırmacı karar sicili'));
+      sicilKutusu.appendChild(h('p','Dijital bulgu ile araştırmacı hükmü ayrıdır. Matbu teyit için basılı sayfa ve Arapça delil zorunlu. Kararlar yalnız bu oturumun belleğinde tutulur; sayfadan ayrılmadan JSON olarak indirin. İndirilen dosya özel araştırma notları içerebilir.','r-kd-aciklama'));
+      const sicilArac=h('div',null,'r-kd-pilot-arac');
+      const indir=h('button','Karar sicilini JSON indir','r-dugme r-dugme--hayalet');
+      indir.type='button';sicilArac.appendChild(indir);
+      const yukleLabel=h('label','Sicil JSON içe aktar: ');
+      const yukle=h('input');yukle.type='file';yukle.accept='.json,application/json';
+      yukle.setAttribute('aria-label','Araştırmacı karar sicili dosyasını içe aktar');
+      yukleLabel.appendChild(yukle);sicilArac.appendChild(yukleLabel);
+      sicilKutusu.appendChild(sicilArac);
+      const bildirim=h('p','Henüz kaydedilmiş araştırmacı kararı yok.','r-kd-not');
+      bildirim.setAttribute('aria-live','polite');sicilKutusu.appendChild(bildirim);
+      root.appendChild(sicilKutusu);
+      const sicilDurum=(msg)=>{bildirim.textContent=sicil.liste().length+' kayıt · '+msg;};
+      indir.onclick=()=>{
+        try{
+          const blob=new w.Blob([sicil.disaAktar()],{type:'application/json;charset=utf-8'});
+          const url=w.URL.createObjectURL(blob),a=h('a');
+          a.href=url;a.download='rahle-kaynak-fis-karar-sicili.json';
+          doc.body.appendChild(a);a.click();a.remove();
+          w.setTimeout(()=>w.URL.revokeObjectURL(url),0);
+          sicilDurum('JSON indirme başlatıldı. Dosyayı güvenli saklayın.');
+        }catch(e){sicilDurum('İndirme hatası: '+(e.message||e));}
+      };
+      yukle.onchange=async()=>{
+        const file=yukle.files&&yukle.files[0];
+        if(!file)return;
+        try{
+          if(file.size>2000000)throw new Error('Dosya 2 MB sınırını aşıyor');
+          const n=sicil.iceAktar(await file.text());
+          sicilYenile.forEach(f=>f());
+          sicilDurum(n+' karar çakışmasız içe aktarıldı.');
+        }catch(e){sicilDurum('İçe aktarma reddedildi: '+(e.message||e));}
+        finally{yukle.value='';}
+      };
+      const kararPanel=(kod,bag,dijital)=>{
+        const bolum=h('details',null,'r-kd-karar-panel');
+        bolum.appendChild(h('summary','Araştırmacı kararı ve gerekçeli geçmiş'));
+        const form=h('div',null,'r-kd-karar-form');
+        const field=(etiket,el)=>{
+          const l=h('label',etiket);l.appendChild(el);form.appendChild(l);return el;
+        };
+        const sec=(arr)=>{const e=h('select');for(const [v,t] of arr){const o=h('option',t);o.value=v;e.appendChild(o);}return e;};
+        const karar=field('Araştırmacı kararı',sec([
+          ['bekliyor','Henüz karar verilmedi'],['uyumlu','Dijital uyum kabul edildi'],
+          ['incele','Ayrıntılı inceleme gerekli'],['duzeltme','Düzeltme önerisi']
+        ]));
+        const matbu=field('Matbu neşir',sec([
+          ['bekliyor','Matbu teyit bekliyor'],['teyit','Matbu nüshadan teyit edildi'],
+          ['uyusmazlik','Matbu nüsha ile uyuşmuyor']
+        ]));
+        const sayfa=h('input');sayfa.type='text';sayfa.maxLength=240;
+        sayfa.placeholder='Neşir, cilt ve sayfa';field('Basılı neşir ve sayfa',sayfa);
+        const delil=h('textarea');delil.rows=2;delil.maxLength=3000;delil.dir='rtl';
+        delil.placeholder='Matbu sayfadaki Arapça ibare';field('Matbu Arapça delil',delil);
+        const gerekce=h('textarea');gerekce.rows=2;gerekce.maxLength=3000;
+        gerekce.placeholder='Hükmün dayanağı';field('Gerekçe',gerekce);
+        const inceleyen=h('input');inceleyen.type='text';inceleyen.maxLength=240;
+        field('İnceleyen (isteğe bağlı)',inceleyen);
+        const button=h('button','Kararı sicile ekle','r-dugme r-dugme--hayalet');
+        button.type='button';form.appendChild(button);
+        const sonDurum=h('p','','r-kd-not');sonDurum.setAttribute('aria-live','polite');
+        form.appendChild(sonDurum);
+        const history=h('ol',null,'r-kd-karar-gecmis');
+        bolum.appendChild(form);bolum.appendChild(history);
+        const yenile=()=>{
+          const item=sicil.bul(kod,bag.belge,bag.pid||'_pid_yok_');
+          history.textContent='';
+          if(!item){sonDurum.textContent='Bu fiş bağlantısında karar bulunmuyor · Matbu teyit: bekliyor';return;}
+          const v=item.son;
+          karar.value=v.karar;matbu.value=v.matbuDurum;gerekce.value=v.gerekce;
+          sayfa.value=v.matbuSayfa;delil.value=v.matbuDelil;inceleyen.value=v.inceleyen;
+          sonDurum.textContent='Karar: '+v.karar+' · Matbu: '+v.matbuDurum+
+            ' · Geçmiş: '+item.gecmis.length;
+          for(const ev of item.gecmis)
+            history.appendChild(h('li',ev.tarih+' · '+ev.karar.karar+' · matbu: '+
+              ev.karar.matbuDurum+' · gerekçe: '+ev.karar.gerekce));
+        };
+        button.onclick=()=>{
+          try{
+            sicil.kaydet({kod,belge:bag.belge,pid:bag.pid||'_pid_yok_',
+              dijitalDurum:dijital,karar:karar.value,matbuDurum:matbu.value,
+              matbuSayfa:sayfa.value,matbuDelil:delil.value,
+              gerekce:gerekce.value,inceleyen:inceleyen.value});
+            yenile();sicilDurum('Karar bellekte. Kalıcı tutmak için JSON indirin.');
+          }catch(e){sonDurum.textContent='Kaydedilmedi: '+(e.message||e);}
+        };
+        sicilYenile.push(yenile);yenile();
+        return bolum;
+      };
+
       const counts=h('div',null,'r-kd-sayaclar');root.appendChild(counts);
       const filter=h('select',null,'r-kd-filtre');
       for(const [v,ad] of [['hepsi','Tüm fişler'],['hata','Yapısal hatalar'],['supheli','Şüpheli eşleşmeler'],['teyit','Teyit bekleyenler'],['bagli','Ön kontrolde bulgusuz'],['baglantili','Paragraf bağı olanlar'],['baglantisiz','Paragraf bağı olmayanlar']]){
@@ -1580,6 +1778,7 @@ function kur(app,w,doc) {
                 }
               };
               satir.appendChild(kimlik);
+              satir.appendChild(kararPanel(r.kod,bag,sinif));
               if(p){
                 const det=h('details');
                 det.appendChild(h('summary','Fiş alıntısı, işaretli aralık ve kaynak paragrafını karşılaştır'));
@@ -1742,6 +1941,7 @@ function kur(app,w,doc) {
                 }
               };
               satir.appendChild(kart);
+              satir.appendChild(kararPanel(rec.kod,bag,tur));
               const detay=h('details');
               detay.appendChild(h('summary','Fiş Arapçası, işaretli metin ve dijital kaynağı göster'));
               if(fis) {
@@ -1860,9 +2060,10 @@ function kur(app,w,doc) {
   app.on('hazir',baglantiEkle);
   const css=doc.createElement('style');
   css.textContent='.r-kd-pilot,.r-kd-35-panel{margin:20px 0;padding:12px;border:1px solid var(--r-cizgi,#ddd);border-radius:8px}.r-kd-pilot-arac{display:flex;gap:8px;flex-wrap:wrap}.r-kd-pilot-kayit details{margin:8px 0}.r-kaynak-denetim{max-width:1050px;margin:0 auto;padding:16px}.r-kd-aciklama,.r-kd-not{color:var(--r-soluk,#666)}.r-kd-sayaclar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.r-kd-sayi,.r-kd-durum{padding:4px 7px;border:1px solid var(--r-cizgi,#ddd);border-radius:5px}.r-kd-filtre,.r-kd-pilot-filtre{margin:10px 0;padding:8px}.r-kd-kayit{padding:12px 4px;border-bottom:1px solid var(--r-cizgi,#ddd)}.r-kd-kayit>a{font-weight:600}.r-kd-durum{margin-inline-start:12px;font-size:12px}.r-kd-bulgu,.r-kd-derin{margin:5px 0;font-size:13px}.r-kd-giris{margin:10px 0 15px}.r-kd-bag{margin:10px 0}.r-kd-kaynak{display:block;font-size:12px;color:var(--r-soluk,#666);overflow-wrap:anywhere;margin-bottom:3px}.r-kd-kanıt{background:var(--r-yuzey,#fff);padding:8px 12px;border:1px solid var(--r-cizgi,#ddd);border-radius:6px;margin:8px 0}.r-kd-kanıt strong{display:block;font-size:12px}.r-kd-arapca{font-size:16px;direction:rtl;text-align:right;line-height:1.9;font-family:var(--r-yazi-ar,serif);overflow-wrap:anywhere;margin:4px 0 9px}.r-kd-derin--supheli{border-inline-start:3px solid #b47815;padding-inline-start:8px}.r-kd-derin--uyum{border-inline-start:3px solid var(--r-vurgu,#578);padding-inline-start:8px}';
+  css.textContent+=".r-kd-karar-sicili{padding:12px;margin:16px 0;border:1px solid var(--r-cizgi,#ddd);border-radius:8px}.r-kd-karar-panel{padding:8px;margin:8px 0;border:1px solid var(--r-cizgi,#ddd);border-radius:6px}.r-kd-karar-panel summary{cursor:pointer}.r-kd-karar-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:10px 0}.r-kd-karar-form label{display:flex;flex-direction:column;gap:4px}.r-kd-karar-form input,.r-kd-karar-form textarea,.r-kd-karar-form select{width:100%;box-sizing:border-box;padding:6px}.r-kd-karar-gecmis{font-size:12px;overflow-wrap:anywhere}";
   doc.head.appendChild(css);
 }
-const api={sade,satirlar,ozetle,derinSonuc,baglamSonucu,pilotAlinti,lafizKaniti,hattabiKalanKodlari,kur};
+const api={sade,satirlar,ozetle,derinSonuc,baglamSonucu,pilotAlinti,lafizKaniti,hattabiKalanKodlari,kararSicili,kur};
 g.RahleKaynakDenetimi=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(g.App&&g.document)kur(g.App,g,g.document);
