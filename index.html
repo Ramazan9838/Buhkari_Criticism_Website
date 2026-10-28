@@ -2,6 +2,10 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
+<!-- İçerik güvenlik politikası: şifresi çözülen site blob iframe'de açılır ve bu politikayı devralır. Veri yalnız bu köke
+     ve GitHub API'sine (ortak kayıt) gidebilir; başka sunucuya istek, form gönderimi, eklenti ve <base> yasak.
+     Satır içi betik/stil gerekir (tek dosyalık uygulama); işçi (kaynak paketi araması) blob'dan kurulur. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.github.com; frame-src blob:; child-src blob:; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">

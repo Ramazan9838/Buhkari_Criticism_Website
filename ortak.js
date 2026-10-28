@@ -105,10 +105,13 @@
   }
   function harita(dizi, kim) { var m = Object.create(null); kim.forEach(function (k, i) { m[k] = dizi[i]; }); return m; }
 
-  function cakismaYaz(s, yol) {
+  /* Çakışma: yol ve (s.ayrinti varsa) iki tarafın değeri saklanır; Rahle bunları "Çakışmaları incele" penceresinde
+     gösterir ve araştırmacı öbür bilgisayarın değerini sonradan alabilir (birleşimde bu tarayıcınınki geçer). */
+  function cakismaYaz(s, yol, B, L, R) {
     for (var i = 0; i < yol.length; i++) if (SAYILMAZ[yol[i]]) return;
     s.cakisma++;
     if (s.yollar.length < 50) s.yollar.push(yol.slice());
+    if (s.ayrinti && s.ayrinti.length < 200) s.ayrinti.push({ yol: yol.slice(), taban: B === undefined ? null : B, yerel: L, uzak: R });
   }
 
   function birlestir(B, L, R, s, yol) {
@@ -132,7 +135,7 @@
     if (ust === 'sayac' && typeof L === 'number' && typeof R === 'number') return L + R - (typeof B === 'number' ? B : 0);
     // zaman damgası: ileri olan
     if (typeof L === 'string' && typeof R === 'string' && ISO_RE.test(L) && ISO_RE.test(R)) return L > R ? L : R;
-    cakismaYaz(s, yol);
+    cakismaYaz(s, yol, B, L, R);
     return L;                        // son eşitleyen geçer
   }
 
@@ -158,13 +161,13 @@
   /* Durum düzeyinde: anahtar anahtar; 'gunluk' küme birleşimi. → {deger, cakisma, yollar} */
   function durumBirlestir(B, L, R) {
     B = B || {}; L = L || {}; R = R || {};
-    var s = { cakisma: 0, yollar: [] }, out = {}, gor = Object.create(null);
+    var s = { cakisma: 0, yollar: [], ayrinti: [] }, out = {}, gor = Object.create(null);
     Object.keys(L).concat(Object.keys(R)).forEach(function (k) {
       if (gor[k]) return; gor[k] = 1;
       var v = k === 'gunluk' ? sicilBirlestir(B[k], L[k], R[k]) : birlestir(B[k], L[k], R[k], s, [k]);
       if (!bosMu(v)) out[k] = v;
     });
-    return { deger: out, cakisma: s.cakisma, yollar: s.yollar };
+    return { deger: out, cakisma: s.cakisma, yollar: s.yollar, ayrinti: s.ayrinti };
   }
 
   /* Ham kayıt → durum: yalnız paylaşılan anahtarlar, boşlar atılır, gunlukArsiv + gunluk tek sicil. paylasilir:
@@ -380,7 +383,7 @@
      o.depo · o.taban (son eşitlenen okuma {commit, agac, dosyalar} ya da null: bu tarayıcı hiç eşitlemedi) ·
      o.yerel (bu tarayıcının durumu; durumYap ile) · o.kullanici · o.izin(yerelDegisecek) → false dönerse depoya yazmadan
      durur (kullanıcı yazıyor) · o.deneme (yarışta yeniden deneme, öntanımlı 3).
-     Sonuç: {durum, okuma, yerelDegisti, gonderildi, cakisma, yollar, ilk (dal yoktu, bu tarayıcı başlangıç oldu),
+     Sonuç: {durum, okuma, yerelDegisti, gonderildi, cakisma, yollar, ayrinti ([{yol, taban, yerel, uzak}]), ilk (dal yoktu, bu tarayıcı başlangıç oldu),
      ilkBaglanis (dal vardı, depodaki esas alındı)} ya da {ertelendi: true}. */
   function esitle(o) {
     var izin = o.izin || function () { return true; };
@@ -417,7 +420,7 @@
         if (!izin(yerelDegisti)) return { ertelendi: true };
         var yaz = gonder ? o.depo.yaz(uzak, ayir(birlesik), mesaj(b.cakisma ? b.cakisma + ' çakışma' : '', degisenAd(birlesik, uzakDurum))) : Promise.resolve(uzak);
         return yaz.then(function (yeni) {
-          return { durum: birlesik, okuma: yeni, yerelDegisti: yerelDegisti, gonderildi: gonder, cakisma: b.cakisma, yollar: b.yollar };
+          return { durum: birlesik, okuma: yeni, yerelDegisti: yerelDegisti, gonderildi: gonder, cakisma: b.cakisma, yollar: b.yollar, ayrinti: b.ayrinti || [] };
         });
       }).catch(function (e) {
         if (e && e.cakisma && deneme-- > 0) return tur();   // dal bu arada ilerledi: yeniden oku, yeniden birleştir
@@ -429,7 +432,7 @@
 
   var api = {
     SEMA: SEMA, KLASOR: KLASOR, paylasilirMi: paylasilirMi, esit: esit, kanonik: kanonik,
-    birlestir: function (B, L, R) { var s = { cakisma: 0, yollar: [] }; var v = birlestir(B, L, R, s, []); return { deger: v, cakisma: s.cakisma, yollar: s.yollar }; },
+    birlestir: function (B, L, R) { var s = { cakisma: 0, yollar: [], ayrinti: [] }; var v = birlestir(B, L, R, s, []); return { deger: v, cakisma: s.cakisma, yollar: s.yollar, ayrinti: s.ayrinti }; },
     durumBirlestir: durumBirlestir, sicilBirlestir: sicilBirlestir, durumYap: durumYap, yazilacaklar: yazilacaklar,
     ayir: ayir, topla: topla, Depo: Depo, esitle: esitle
   };
