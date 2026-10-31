@@ -1,6 +1,6 @@
 {
- "surum": "rahle-2ac5ac1",
- "guncelleme": "2026-10-31T10:54:18+00:00",
+ "surum": "rahle-e40114d",
+ "guncelleme": "2026-10-31T20:10:12+00:00",
  "yuvalar": [
   {
    "kullanici": "Admin",
@@ -18,10 +18,10 @@
    ]
   },
   "okuma": {
-   "ozet": "8d6a607296f0e79511cf9b738ba9eb5ad732c931bf6aa93dbddaa4a132401d0d",
-   "boyut": 60508664,
+   "ozet": "1ff190c04027ef8e4ef6ec206ee95638ba34d29fddb53c5ed2e0d8ff20775a4b",
+   "boyut": 67656519,
    "parcalar": [
-    "veri/okuma.8d6a607296f0.0.bin"
+    "veri/okuma.1ff190c04027.0.bin"
    ]
   },
   "paket": {
