@@ -31,7 +31,7 @@
   var DIZI_KOVA = 16;
   var SICIL_BLOK = 500;
   var ARASTIRMA_RE = /^(veri\.|depo\.|gunluk$|gunlukArsiv$)/;
-  var ARASTIRMA_EK_RE = /^(sarih\.(yorum|taslak)$|mesele\.vakalar$|kuyruk\.ozel$|tez\.taslak\.|oku\.mobilTaslak$)/;
+  var ARASTIRMA_EK_RE = /^(sarih\.(yorum|taslak)$|mesele\.vakalar$|kuyruk\.ozel$|tez\.taslak\.|oku\.mobilTaslak$|analiz\.donemAtama$)/;
   /* Çakışma sayılmayan yollar: türetilmiş alanlar (fisIndeksle yeniden hesaplar), iz damgaları, günlük sayım özeti.
      Aynı yerde iki taraf farklı yazdıysa yine bu tarayıcının değeri geçer, yalnız sayıya eklenmez. */
   var SAYILMAZ = { iz: 1, esik: 1, karineSayisi: 1, kuyrukSayim: 1 };
