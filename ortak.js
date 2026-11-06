@@ -6,6 +6,10 @@
    JSON dosyaları olarak durur; GitHub Git Data API ile okunur ve yazılır, ana dala dokunulmaz. Birleştirme üç yolludur
    (son ortak sürüm / bu tarayıcı / depo): farklı fişlerde ve alanlarda yapılan değişiklikler birbirini ezmez; aynı alanı
    iki taraf farklı değiştirdiyse son eşitleyen (bu tarayıcı) geçer ve çakışma sayılır.
+   73.2 (6 Kas 2026): silinen kimlikli dizi öğesi ortak kayıtta mezar taşı {id|kod, silindi:true, t} olarak kalır (yerel
+   kayda yazılmaz); kayıtların ya da anahtarların %20'sinden fazlası silinecekse o.silmeOnay sorulur, onaysız silme
+   gönderilmez; yalnız eklenen depolarda silme yok sayılır; aynı kimlikli iki yeni kayıtta bu tarayıcınınki yeniden
+   kimliklendirilir (kimlikSicili 'yeniden-kimlik'); kimliksiz dizi öğesinin düzeltmesi sıradaki öğeyle eşleşir.
 
    Bu dosya saf kitaplıktır (DOM ve Rahle'ye bağlı değildir): giriş sayfası (araclar/yayin/giris.html) yükler ve Rahle'ye
    `window.__rahleOrtak.lib` olarak verir; eşitlemeyi Rahle içindeki parcalar/46_ortak-kayit.js yürütür. Node'da
@@ -37,6 +41,13 @@
   var SAYILMAZ = { iz: 1, esik: 1, karineSayisi: 1, kuyrukSayim: 1 };
   var ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
+  /* Yalnız eklenen depolar (O-10, DO-02): karar/onay/sicil kayıtları birleşimde silinmez (iki yönde de silme yok sayılır);
+     geri alma bu depolarda yeni kayıtla yapılır. depo.yapilacaklar'da yalnız kontrol programı olayları (program alanı). */
+  var YALNIZ_EKLENIR = /^depo\.(oneriKararlari|kimlikSicili|mukerrerKararlari|kaynakKararlari|erisimTakip|arastirmaBaglari|tohumSilinen)$/;
+  function yalnizEklenir(k, x) { return YALNIZ_EKLENIR.test(k) || (k === 'depo.yapilacaklar' && duzNesne(x) && typeof x.program === 'string'); }
+  /* Mezar taşı (O-6): ortak kayıtta silinen kimlikli dizi öğesi {id|kod, silindi:true, t} olarak kalır; öbür bilgisayarın
+     eski tabanı ya da düzeltmesi onu diriltmez. Yerel kayda (Rahle'nin depolarına) mezar yazılmaz: esitle onları ayıklar. */
+  function mezarMi(x) { return duzNesne(x) && x.silindi === true && Object.keys(x).every(function (k) { return k === 'id' || k === 'kod' || k === 'silindi' || k === 't'; }); }
   function paylasilirMi(k) { return ARASTIRMA_RE.test(k) || ARASTIRMA_EK_RE.test(k); }
   function duzNesne(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
   function bosMu(v) { return v == null || (Array.isArray(v) && !v.length) || (duzNesne(v) && !Object.keys(v).length); }
@@ -118,6 +129,15 @@
     if (esit(L, R)) return L;
     if (esit(B, L)) return R;
     if (esit(B, R)) return L;
+    if (mezarMi(L) || mezarMi(R)) {
+      // bir taraf sildi: öbürü tabandan değişmediyse ya da taban da mezarsa silme geçer; taban yoksa (iki tarafta yeni) canlı kalır
+      var canli = mezarMi(L) ? R : L;
+      if (B === undefined || mezarMi(B) || mezarMi(canli)) return canli === undefined ? (mezarMi(L) ? L : R) : canli;
+      var olu = mezarMi(L) ? L : R;
+      // silinen kayıt öbür tarafta düzeltilmişti: silme geçer; incelemede "geçerli" = silme, "öbürü" = düzeltilmiş kayıt
+      if (!esit(B, canli)) cakismaYaz(s, yol, B, olu, canli);
+      return olu;
+    }
     if (duzNesne(L) && duzNesne(R)) {
       var b = duzNesne(B) ? B : {}, out = {}, gor = Object.create(null);
       Object.keys(L).concat(Object.keys(R)).forEach(function (k) {
@@ -139,20 +159,29 @@
     return L;                        // son eşitleyen geçer
   }
 
+  /* Kimliksiz nesne öğesi (ek.notlar, gecmis…; Y-9): tabandaki öğenin yerinde duran yeni içerik o öğenin düzeltmesi sayılır
+     (aynı sırada, taban öğesi bu tarafta yok) → iki tarafın düzeltmesi tek öğede birleşir, aynı alan çakışma sayılır. */
+  function sirayaBagla(B, kb, X, kx) {
+    var sb = new Set(kb), sx = new Set(kx);
+    for (var i = 0; i < Math.min(B.length, X.length); i++)
+      if (kx[i][0] === 'j' && kb[i][0] === 'j' && !sb.has(kx[i]) && !sx.has(kb[i]) && duzNesne(X[i]) && duzNesne(B[i])) kx[i] = kb[i];
+    return kx;
+  }
   function diziBirlestir(B, L, R, s, yol) {
-    var kb = kimlikler(B), kl = kimlikler(L), kr = kimlikler(R);
+    var kb = kimlikler(B), kl = sirayaBagla(B, kb, L, kimlikler(L)), kr = sirayaBagla(B, kb, R, kimlikler(R));
+    var ek = yol.length === 1 ? yol[0] : null;
     var mB = harita(B, kb), mL = harita(L, kl);
     var bas = [], orta = [], son = [], ortakGoruldu = false, mR = harita(R, kr);
     R.forEach(function (x, i) {
       var k = kr[i];
       if (k in mL) orta.push(birlestir(mB[k], mL[k], x, s, yol.concat(k.slice(2))));
-      else if (k in mB) { if (!esit(mB[k], x)) orta.push(x); }   // burada silindi; depoda değiştiyse kalır
+      else if (k in mB) { if (!esit(mB[k], x) || (ek && yalnizEklenir(ek, x))) orta.push(x); }   // burada silindi; depoda değiştiyse (ya da yalnız eklenen depodaysa) kalır
       else orta.push(x);                                          // depoda eklendi
     });
     L.forEach(function (x, i) {
       var k = kl[i];
       if (k in mR) { ortakGoruldu = true; return; }
-      if (k in mB) { if (!esit(mB[k], x)) (ortakGoruldu ? son : bas).push(x); return; }  // depoda silindi; burada değiştiyse kalır
+      if (k in mB) { if (!esit(mB[k], x) || (ek && yalnizEklenir(ek, x))) (ortakGoruldu ? son : bas).push(x); return; }  // depoda silindi; burada değiştiyse kalır
       (ortakGoruldu ? son : bas).push(x);                         // burada eklendi (başa eklenen başta kalır)
     });
     return bas.concat(orta, son);
@@ -164,7 +193,10 @@
     var s = { cakisma: 0, yollar: [], ayrinti: [] }, out = {}, gor = Object.create(null);
     Object.keys(L).concat(Object.keys(R)).forEach(function (k) {
       if (gor[k]) return; gor[k] = 1;
-      var v = k === 'gunluk' ? sicilBirlestir(B[k], L[k], R[k]) : birlestir(B[k], L[k], R[k], s, [k]);
+      var dz = function (x) { return Array.isArray(x) ? x : []; };
+      var v = k === 'gunluk' ? sicilBirlestir(B[k], L[k], R[k])
+        : (YALNIZ_EKLENIR.test(k) || k === 'depo.yapilacaklar') && Array.isArray(L[k] || R[k]) ? diziBirlestir(dz(B[k]), dz(L[k]), dz(R[k]), s, [k])
+        : birlestir(B[k], L[k], R[k], s, [k]);
       if (!bosMu(v)) out[k] = v;
     });
     return { deger: out, cakisma: s.cakisma, yollar: s.yollar, ayrinti: s.ayrinti };
@@ -379,10 +411,137 @@
     });
   };
 
+  /* ---------- Silme modeli (K-1, O-6) ve kimlik çakışması (K-2) ---------- */
+  function kimlikAl(x) { return !duzNesne(x) ? null : (typeof x.id === 'string' || typeof x.id === 'number') ? 'i:' + x.id : typeof x.kod === 'string' ? 'k:' + x.kod : null; }
+  // yerel + mezarlar: tabandaki mezar taşınır; tabanda olup yerelde olmayan kimlikli öğe mezar olur (yalnız eklenenler hariç)
+  function mezarEkle(T, yerel, t) {
+    var out = Object.assign({}, yerel);
+    Object.keys(T).forEach(function (k) {
+      var tv = T[k], lv = yerel[k]; if (k === 'gunluk' || !Array.isArray(tv) || (lv !== undefined && !Array.isArray(lv))) return;
+      lv = lv || []; var var_ = Object.create(null), ek = [];
+      lv.forEach(function (x) { var i = kimlikAl(x); if (i) var_[i] = 1; });
+      tv.forEach(function (x) {
+        var i = kimlikAl(x); if (!i || var_[i]) return;
+        if (mezarMi(x)) ek.push(x); else if (!yalnizEklenir(k, x)) ek.push(x.id != null ? { id: x.id, silindi: true, t: t } : { kod: x.kod, silindi: true, t: t });
+      });
+      if (ek.length) out[k] = lv.concat(ek);
+    });
+    return out;
+  }
+  function mezarImza(d) { var l = []; Object.keys(d).forEach(function (k) { if (Array.isArray(d[k]) && k !== 'gunluk') d[k].forEach(function (x) { if (mezarMi(x)) l.push(k + '|' + kimlikAl(x) + '|' + x.t); }); }); return l.sort().join('\n'); }
+  function canliYap(d) {
+    var out = {};
+    Object.keys(d).forEach(function (k) { var v = d[k]; if (Array.isArray(v) && k !== 'gunluk') { v = v.filter(function (x) { return !mezarMi(x); }); if (v.length) out[k] = v; } else out[k] = v; });
+    return out;
+  }
+  // U (depo) → M (gönderilecek): silinen kayıt (dizi öğesi, nesne anahtarı, sicil satırı) ve anahtar sayısı
+  function silmeOlc(U, M) {
+    var r = { kayit: 0, toplam: 0, anahtar: 0, anahtarToplam: 0, ornek: [] };
+    Object.keys(U).forEach(function (k) {
+      var u = U[k], m = M[k], n = 0, sil = 0;
+      if (Array.isArray(u)) {
+        var kim = k === 'gunluk' ? sicilKimlik : kimlikler, ku = kim(u), mm = Object.create(null);
+        if (Array.isArray(m)) kim(m).forEach(function (x, i) { if (!mezarMi(m[i])) mm[x] = 1; });
+        u.forEach(function (x, i) { if (mezarMi(x)) return; n++; if (!mm[ku[i]]) sil++; });
+      } else if (duzNesne(u)) { Object.keys(u).forEach(function (a) { n++; if (!duzNesne(m) || !(a in m)) sil++; }); }
+      else { n = 1; if (m === undefined) sil = 1; }
+      if (!n) return;
+      r.toplam += n; r.kayit += sil; r.anahtarToplam++; if (sil === n) r.anahtar++;
+      if (sil && r.ornek.length < 12) r.ornek.push(k + ' (' + sil + ')');
+    });
+    r.toplu = r.kayit > 0 && (r.kayit / r.toplam > TOPLU_SILME || r.anahtar / r.anahtarToplam > TOPLU_SILME);
+    return r;
+  }
+  var TOPLU_SILME = 0.2;
+  // onaysız toplu silme: depodaki (U) kayıtlar birleşime geri konur (silme gönderilmez)
+  function silmeleriGeriKoy(M, U) {
+    var out = Object.assign({}, M);
+    Object.keys(U).forEach(function (k) {
+      var u = U[k], m = out[k];
+      if (m === undefined) out[k] = u;
+      else if (k === 'gunluk' && Array.isArray(u) && Array.isArray(m)) out[k] = sicilBirlestir([], m, u);
+      else if (Array.isArray(u) && Array.isArray(m)) {
+        var yer = Object.create(null), y = m.slice(); kimlikler(m).forEach(function (x, i) { yer[x] = i; });
+        kimlikler(u).forEach(function (x, i) { if (mezarMi(u[i])) return; if (!(x in yer)) y.push(u[i]); else if (mezarMi(y[yer[x]])) y[yer[x]] = u[i]; });
+        out[k] = y;
+      } else if (duzNesne(u) && duzNesne(m)) { var o = Object.assign({}, m); Object.keys(u).forEach(function (a) { if (!(a in o)) o[a] = u[a]; }); out[k] = o; }
+    });
+    return out;
+  }
+  /* K-2: sırayla üretilen kimlikler (yeni fiş kodu ve no, M, TM, AD-, KD, AGP-). Aynı kimlik iki tarafta, tabanda yok ve
+     içerik farklıysa bu bilgisayarın kaydı sıradaki boş kimliği alır; bu bilgisayarda değişen her yerde (bağlar) taşınır.
+     Görünen biçim aynıdır; mevcut (tabandaki) hiçbir kimlik değişmez. AD-901…999 atlanır. */
+  var AILELER = ['veri.yeniFisler', 'veri.yeniMeseleler', 'veri.yeniTmler', 'depo.arastirmaDosyalari', 'depo.kararlar', 'depo.gelistirmePlani'];
+  function sonrakiKimlik(eski, kul) {
+    var m = /^(.*?)(\d+)$/.exec(eski), on = m ? m[1] : eski + '-', gen = m ? m[2].length : 1, enb = 0, atla = function (n) { return on === 'AD-' && n >= 901 && n <= 999; };
+    kul.forEach(function (k) { var x = /^(.*?)(\d+)$/.exec(k); if (x && x[1] === on && !atla(+x[2])) enb = Math.max(enb, +x[2]); });
+    var n = enb + 1, y;
+    do { if (atla(n)) n = 1000; y = on + String(n).padStart(gen, '0'); n++; } while (kul.has(y));
+    return y;
+  }
+  function damga(x, e) { return (duzNesne(x) && (x.olusturma || x.t || x.tarih)) || (e && e.iz && e.iz.olusturma) || ''; }
+  function kimlikTasi(L, B, eski, yeni, eskiNo, yeniNo) {
+    var NO = { no: 1, fisler: 1, bagliFis: 1, ornekFis: 1 };
+    var ced = function (v, ust) {
+      if (typeof v === 'string') return v === eski ? yeni : v;
+      if (typeof v === 'number') return eskiNo != null && v === eskiNo && NO[ust] ? yeniNo : v;
+      if (Array.isArray(v)) return v.map(function (x) { return ced(x, ust); });
+      if (duzNesne(v)) { var o = {}; Object.keys(v).forEach(function (a) { o[a === eski ? yeni : a] = ced(v[a], a); }); return o; }
+      return v;
+    };
+    var out = {};
+    Object.keys(L).forEach(function (k) {
+      var v = L[k], b = B[k];
+      if (Array.isArray(v)) {
+        var bd = Array.isArray(b) ? b : [], kim = k === 'gunluk' ? sicilKimlik : kimlikler, bm = harita(bd, kim(bd)), kv = kim(v);
+        out[k] = v.map(function (x, i) { return kv[i] in bm && esit(bm[kv[i]], x) ? x : ced(x); });
+      } else if (duzNesne(v)) {
+        var o = {}, bb = duzNesne(b) ? b : {};
+        Object.keys(v).forEach(function (a) { var d = !esit(bb[a], v[a]); o[d && a === eski ? yeni : a] = d ? ced(v[a], a) : v[a]; });
+        out[k] = o;
+      } else out[k] = esit(v, b) ? v : ced(v);
+    });
+    return out;
+  }
+  function yenidenKimliklendir(B, L, R, t) {
+    var yeniler = [];
+    AILELER.forEach(function (k) {
+      var alan = k === 'veri.yeniFisler' ? 'kod' : 'id';
+      var dz = function (x) { return Array.isArray(x) ? x.filter(function (y) { return duzNesne(y) && !mezarMi(y) && y[alan] != null; }) : []; };
+      var b = dz(B[k]), r = dz(R[k]); if (!r.length || !dz(L[k]).length) return;
+      var bk = new Set(b.map(function (x) { return String(x[alan]); })), kul = new Set(), noKul = new Set(), rk = Object.create(null), rNo = Object.create(null);
+      b.concat(dz(L[k]), r).forEach(function (x) { kul.add(String(x[alan])); if (typeof x.no === 'number') noKul.add(x.no); });
+      r.forEach(function (x) { rk[x[alan]] = x; if (!bk.has(String(x[alan])) && typeof x.no === 'number') rNo[x.no] = x; });
+      dz(L[k]).forEach(function (x) {
+        var id = String(x[alan]); if (bk.has(id)) return;
+        var d = rk[id], ekL = L['veri.ek'] && L['veri.ek'][id], ekR = R['veri.ek'] && R['veri.ek'][id];
+        var ayni = d && ((damga(x, ekL) && damga(x, ekL) === damga(d, ekR)) || esit(x, d));
+        var kodCak = d && !ayni, noCak = alan === 'kod' && typeof x.no === 'number' && rNo[x.no] && rNo[x.no] !== d;
+        if (!kodCak && !(noCak && !ayni)) return;
+        var yeni = kodCak ? sonrakiKimlik(id, kul) : id, eskiNo = null, yeniNo = null;
+        if (alan === 'kod' && typeof x.no === 'number') { eskiNo = x.no; yeniNo = Math.max.apply(null, Array.from(noKul)) + 1; noKul.add(yeniNo); }
+        kul.add(yeni);
+        L = kimlikTasi(L, B, id === yeni ? null : id, yeni, eskiNo, yeniNo);
+        yeniler.push({ anahtar: k, eski: id, yeni: yeni, eskiNo: eskiNo, yeniNo: yeniNo });
+      });
+    });
+    if (yeniler.length) {
+      var ks = (Array.isArray(L['depo.kimlikSicili']) ? L['depo.kimlikSicili'] : []).slice();
+      yeniler.forEach(function (y) {
+        ks.push({ id: 'ortak-' + y.eski + '-' + y.yeni + (y.yeniNo ? '-' + y.yeniNo : ''), tur: 'yeniden-kimlik', eski: [y.eski], yeni: [y.yeni], esleme: [], grup: '', kaynak: 'ortak kayıt', t: t,
+          gerekce: 'Ortak kayıt birleşimi: aynı kimlik iki bilgisayarda ayrı kayda verilmiş; bu bilgisayarın kaydı yeni kimlik aldı' + (y.yeniNo ? ' (fiş no ' + y.eskiNo + ' → ' + y.yeniNo + ')' : '') });
+      });
+      L['depo.kimlikSicili'] = ks;
+    }
+    return { yerel: L, yeniler: yeniler };
+  }
+
   /* ---------- Eşitleme turu ----------
      o.depo · o.taban (son eşitlenen okuma {commit, agac, dosyalar} ya da null: bu tarayıcı hiç eşitlemedi) ·
      o.yerel (bu tarayıcının durumu; durumYap ile) · o.kullanici · o.izin(yerelDegisecek) → false dönerse depoya yazmadan
-     durur (kullanıcı yazıyor) · o.deneme (yarışta yeniden deneme, öntanımlı 3).
+     durur (kullanıcı yazıyor) · o.deneme (yarışta yeniden deneme, öntanımlı 3) · o.silmeOnay({kayit, toplam, anahtar,
+     anahtarToplam, ornek}) → true | Promise<true>: toplu silmeye (%20'den fazla) izin; yoksa ya da false ise silme gönderilmez.
+     Sonuçta ayrıca silme ({kayit, toplam, toplu, gonderildi, ornek} | null) ve yeniKimlikler ([{anahtar, eski, yeni, eskiNo, yeniNo}]).
      Sonuç: {durum, okuma, yerelDegisti, gonderildi, cakisma, yollar, ayrinti ([{yol, taban, yerel, uzak}]), ilk (dal yoktu, bu tarayıcı başlangıç oldu),
      ilkBaglanis (dal vardı, depodaki esas alındı)} ya da {ertelendi: true}. */
   function esitle(o) {
@@ -409,18 +568,33 @@
         var uzakDurum = topla(uzak.dosyalar);
         if (!o.taban) {
           // Bu tarayıcı ilk kez bağlanıyor: depodaki kayıt esas alınır (önceki yerel kayıt çağıran tarafından saklanır).
-          var degisir = !esit(yerel, uzakDurum);
+          // çöp kutusu birleşir (Tohuma dön / kurtarma sonrası ilk bağlanışta silinenlerin kopyası kaybolmasın; K-1 güvencesi)
+          var d0 = canliYap(uzakDurum), yc = yerel['depo.copKutusu'], uk = new Set((uzakDurum['depo.copKutusu'] || []).map(function (x) { return x && x.id; }));
+          var ekc = Array.isArray(yc) ? yc.filter(function (x) { return duzNesne(x) && !uk.has(x.id); }) : [];
+          if (ekc.length) d0['depo.copKutusu'] = (d0['depo.copKutusu'] || []).concat(ekc);
+          var degisir = !esit(yerel, d0);
           if (!izin(degisir)) return { ertelendi: true };
-          return { durum: uzakDurum, okuma: uzak, yerelDegisti: degisir, gonderildi: false, cakisma: 0, yollar: [], ilkBaglanis: true };
+          return { durum: d0, okuma: uzak, yerelDegisti: degisir, gonderildi: false, cakisma: 0, yollar: [], ilkBaglanis: true };
         }
-        // dal ilerlemediyse (çoğu 30 s'lik tur) taban = depo: birleşim bu tarayıcının kaydıdır
-        var b = uzak === o.taban || uzak.commit === o.taban.commit ? { deger: yerel, cakisma: 0, yollar: [] } : durumBirlestir(topla(o.taban.dosyalar), yerel, uzakDurum);
-        var birlesik = b.deger;
-        var yerelDegisti = !esit(birlesik, yerel), gonder = !esit(birlesik, uzakDurum);
-        if (!izin(yerelDegisti)) return { ertelendi: true };
-        var yaz = gonder ? o.depo.yaz(uzak, ayir(birlesik), mesaj(b.cakisma ? b.cakisma + ' çakışma' : '', degisenAd(birlesik, uzakDurum))) : Promise.resolve(uzak);
-        return yaz.then(function (yeni) {
-          return { durum: birlesik, okuma: yeni, yerelDegisti: yerelDegisti, gonderildi: gonder, cakisma: b.cakisma, yollar: b.yollar, ayrinti: b.ayrinti || [] };
+        // dal ilerlemediyse (çoğu 30 s'lik tur) taban = depo: birleşim bu tarayıcının kaydıdır (silmeler mezar taşıyla)
+        var t = new Date().toISOString(), tabanDurum = topla(o.taban.dosyalar), L = mezarEkle(tabanDurum, yerel, t), yk = { yerel: L, yeniler: [] };
+        var ayni = uzak === o.taban || uzak.commit === o.taban.commit;
+        if (!ayni) { yk = yenidenKimliklendir(tabanDurum, L, uzakDurum, t); L = yk.yerel; }
+        var b = ayni ? { deger: L, cakisma: 0, yollar: [] } : durumBirlestir(tabanDurum, L, uzakDurum);
+        var birlesik = b.deger, silme = silmeOlc(uzakDurum, birlesik);
+        // toplu silme freni (K-1): kayıtların ya da anahtarların %20'sinden fazlası silinecekse onay; onaysız silme gönderilmez
+        var onay = silme.toplu ? Promise.resolve(o.silmeOnay ? o.silmeOnay(silme) : false) : Promise.resolve(true);
+        return onay.then(function (evet) {
+          if (!evet) birlesik = silmeleriGeriKoy(birlesik, uzakDurum);
+          var canli = canliYap(birlesik);
+          // mezarların dizideki yeri (yerelde sona eklenir) tek başına gönderim sebebi değildir
+          var yerelDegisti = !esit(canli, yerel), gonder = !esit(canli, canliYap(uzakDurum)) || mezarImza(birlesik) !== mezarImza(uzakDurum);
+          if (!izin(yerelDegisti)) return { ertelendi: true };
+          var yaz = gonder ? o.depo.yaz(uzak, ayir(birlesik), mesaj(b.cakisma ? b.cakisma + ' çakışma' : '', degisenAd(birlesik, uzakDurum))) : Promise.resolve(uzak);
+          return yaz.then(function (yeni) {
+            return { durum: canli, okuma: yeni, yerelDegisti: yerelDegisti, gonderildi: gonder, cakisma: b.cakisma, yollar: b.yollar, ayrinti: b.ayrinti || [],
+              silme: silme.kayit ? { kayit: silme.kayit, toplam: silme.toplam, toplu: silme.toplu, gonderildi: !silme.toplu || !!evet, ornek: silme.ornek } : null, yeniKimlikler: yk.yeniler };
+          });
         });
       }).catch(function (e) {
         if (e && e.cakisma && deneme-- > 0) return tur();   // dal bu arada ilerledi: yeniden oku, yeniden birleştir
@@ -434,7 +608,7 @@
     SEMA: SEMA, KLASOR: KLASOR, paylasilirMi: paylasilirMi, esit: esit, kanonik: kanonik,
     birlestir: function (B, L, R) { var s = { cakisma: 0, yollar: [], ayrinti: [] }; var v = birlestir(B, L, R, s, []); return { deger: v, cakisma: s.cakisma, yollar: s.yollar, ayrinti: s.ayrinti }; },
     durumBirlestir: durumBirlestir, sicilBirlestir: sicilBirlestir, durumYap: durumYap, yazilacaklar: yazilacaklar,
-    ayir: ayir, topla: topla, Depo: Depo, esitle: esitle
+    ayir: ayir, topla: topla, Depo: Depo, esitle: esitle, mezarMi: mezarMi, canliYap: canliYap, silmeOlc: silmeOlc, sonrakiKimlik: sonrakiKimlik
   };
   if (typeof module === 'object' && module.exports) module.exports = api; else kok.RahleOrtak = api;
 })(typeof window !== 'undefined' ? window : globalThis);

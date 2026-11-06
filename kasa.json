@@ -1,6 +1,6 @@
 {
- "surum": "rahle-7beeddb",
- "guncelleme": "2026-11-06T07:07:33+00:00",
+ "surum": "rahle-20a28f9",
+ "guncelleme": "2026-11-06T15:59:09+00:00",
  "yuvalar": [
   {
    "kullanici": "Admin",
@@ -11,17 +11,17 @@
  ],
  "dosyalar": {
   "site": {
-   "ozet": "14bd52fc60a6b2eab15e6668fb3970c334cf3a62fadb1449b0504273e3a8c4a3",
-   "boyut": 8103136,
+   "ozet": "c495d34795eb84a7be41f6c1700ea034c23b7c2faf3147f1225abf05ac727c5e",
+   "boyut": 8127867,
    "parcalar": [
-    "veri/site.14bd52fc60a6.0.bin"
+    "veri/site.c495d34795eb.0.bin"
    ]
   },
   "okuma": {
-   "ozet": "422fdc6b77e94ff4a2027a57fc8eaad5e4f127f5dace775bf3dc0ccdd21c690d",
-   "boyut": 72550106,
+   "ozet": "1e91e1b258bd490253cd5cfea25f49fe0e51421521274eb5c5c1e0b4514810d1",
+   "boyut": 72993112,
    "parcalar": [
-    "veri/okuma.422fdc6b77e9.0.bin"
+    "veri/okuma.1e91e1b258bd.0.bin"
    ]
   },
   "aktarim": {
