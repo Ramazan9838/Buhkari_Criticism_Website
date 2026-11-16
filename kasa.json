@@ -1,6 +1,6 @@
 {
- "surum": "rahle-dc05ed6",
- "guncelleme": "2026-11-15T20:34:40+00:00",
+ "surum": "rahle-9f6fe68",
+ "guncelleme": "2026-11-16T04:43:20+00:00",
  "yuvalar": [
   {
    "kullanici": "Admin",
@@ -466,10 +466,10 @@
    ]
   },
   "salatmasasi-veri-tezplan": {
-   "ozet": "9a273a95638e4495398fdbb9e1dfddf1b9a3a59be7c9936ed685d54af229bb19",
-   "boyut": 9748,
+   "ozet": "3771c24b78e7a3913ffb0204ea3621178805a90b359c2855af0bd2e51bc53e78",
+   "boyut": 9767,
    "parcalar": [
-    "veri/salatmasasi-veri-tezplan.9a273a95638e.0.bin"
+    "veri/salatmasasi-veri-tezplan.3771c24b78e7.0.bin"
    ]
   },
   "salatmasasi-belge-CEVIRI_DENETIMI": {
@@ -620,10 +620,10 @@
    ]
   },
   "salatmasasi-belge-TEZ_MADDESI_ADAYLARI": {
-   "ozet": "3f968ee3e97484d8b9a6ee415edfe9cdcb943302e7688ff82c53f5ed8b068c84",
-   "boyut": 105551,
+   "ozet": "939785313aadad233b4a2bb52d4ac152b0ba3974a42e9be2f78c410907bb21a1",
+   "boyut": 105613,
    "parcalar": [
-    "veri/salatmasasi-belge-TEZ_MADDESI_ADAYLARI.3f968ee3e974.0.bin"
+    "veri/salatmasasi-belge-TEZ_MADDESI_ADAYLARI.939785313aad.0.bin"
    ]
   },
   "salatmasasi-belge-TEZ_PLANI": {
@@ -634,10 +634,10 @@
    ]
   },
   "salatmasasi": {
-   "ozet": "a943831db9e1227c4782c46a054b0b624c415aed9c8d52af4d62612c941c97ac",
+   "ozet": "e7a6bc8c0231882c4716f7ade423ab96b5d2f229f6d2533805e794cbbc2bcbc8",
    "boyut": 19863,
    "parcalar": [
-    "veri/salatmasasi.a943831db9e1.0.bin"
+    "veri/salatmasasi.e7a6bc8c0231.0.bin"
    ]
   },
   "aktarim-P_A": {
