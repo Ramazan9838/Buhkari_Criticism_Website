@@ -527,9 +527,11 @@ button:disabled { opacity: .6; cursor: progress; }
   // Sitenin içinden öbür sürüme geçiş (v1 komut paleti, v2 üst çubuğu): tercih yazılır, adres sıfırlanır, site yeniden açılır.
   window.__rahleSurum = function () { return surumAl() || 'v1'; };
   window.__rahleAcilis = { oku: acilisOku, yaz: acilisYaz, onbellek: acilisOnbellek, ortakBagli: function () { return !!acilisDepo(); } };
-  window.__rahleSurumAc = function (s) {
+  // hash (isteğe bağlı): açılacak sürümde gidilecek rota, ör. v2 fiş sayfasındaki "Kaynakta aç (v1)" → #/oku/kaynak/…
+  window.__rahleSurumAc = function (s, hash) {
     surumYaz(s);
-    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    var rota = typeof hash === 'string' && hash.length < 600 && /^#\/[^\s<>"']*$/.test(hash) ? hash : '';
+    try { history.replaceState(null, '', location.pathname + location.search + rota); } catch (e) {}
     return siteAc();
   };
 
