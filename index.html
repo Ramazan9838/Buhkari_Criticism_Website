@@ -63,14 +63,6 @@ button:disabled { opacity: .6; cursor: progress; }
 .tema-sec button[aria-pressed="true"] { color: var(--btn-ink); background: var(--accent); border-color: var(--accent); }
 .tema-sec button:not([aria-pressed="true"]):hover { color: var(--ink); background: var(--bg); }
 .tema-sec button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-/* Sürüm seçimi (17 Kasım 2026): v1 tam site, v2 sade okuma arayüzü (kasada 'v2' dosyası varsa açılır). */
-.surum-sec { border: 0; margin: 16px 0 0; padding: 0; min-width: 0; }
-.surum-sec legend { padding: 0; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-.surum-sec label.surum { display: flex; align-items: flex-start; gap: 10px; margin: 6px 0 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-weight: 400; cursor: pointer; background: var(--bg); }
-.surum-sec label.surum:has(input:checked) { border-color: var(--accent); outline: 1px solid var(--accent); }
-.surum-sec label.surum input { width: auto; margin: 3px 0 0; padding: 0; accent-color: var(--accent); }
-.surum-sec label.surum b { display: block; font-size: 14px; }
-.surum-sec label.surum small { display: block; font-size: 12.5px; color: var(--ink-2); }
 #site { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: none; background: var(--bg); }
 /* Kaynak paketi indirme göstergesi: yalnız indirme sürerken sayfanın üst kenarında 2 px'lik sakin çizgi; Rahle'nin
    alttaki durum satırını örtmez, tıklamayı engellemez; boştayken hiç çizilmez (ayrıntılı ilerlemeyi Rahle kendi
@@ -97,11 +89,6 @@ button:disabled { opacity: .6; cursor: progress; }
     <label for="sifre">Şifre</label>
     <input id="sifre" name="password" type="password" autocomplete="current-password" required autofocus>
     <label class="hatirla"><input type="checkbox" id="hatirla"> Beni hatırla (bu tarayıcıda 30 gün)</label>
-    <fieldset class="surum-sec" id="surum-secim">
-      <legend>Hangi sürüme girmek istiyorsunuz?</legend>
-      <label class="surum"><input type="radio" name="surum" value="v1" checked><span><b>Rahle v1</b><small>Tam site: bütün fişler, meseleler, denetim, tez</small></span></label>
-      <label class="surum"><input type="radio" name="surum" value="v2"><span><b>Rahle v2</b><small>Sade okuma arayüzü (salt okunur; seçili kitâb)</small></span></label>
-    </fieldset>
     <button id="gir" type="submit">Giriş</button>
     <p id="durum" role="status" aria-live="polite"></p>
     <p class="not">Sayfanın içeriği şifrelidir; şifre çözme bu tarayıcıda yapılır, şifre hiçbir yere gönderilmez. Kayıtlarınız bu tarayıcının deposunda kalır.</p>
@@ -114,11 +101,36 @@ button:disabled { opacity: .6; cursor: progress; }
 (function () {
   'use strict';
   var OTURUM = 'rahle.yayin.oturum', OTURUM_AD = 'rahle.yayin.kullanici';
-  // Sürüm tercihi (v1 | v2): yalnız hangi şifreli sayfanın açılacağını söyler; kayıt değildir. Sekmede ve (bir sonraki girişte
-  // kutu önceden seçili gelsin diye) bu tarayıcıda tutulur.
-  var SURUM = 'rahle.yayin.surum';
-  function surumAl() { var s = null; try { s = sessionStorage.getItem(SURUM) || localStorage.getItem(SURUM); } catch (e) {} return s === 'v2' ? 'v2' : 'v1'; }
-  function surumYaz(s) { s = s === 'v2' ? 'v2' : 'v1'; try { sessionStorage.setItem(SURUM, s); localStorage.setItem(SURUM, s); } catch (e) {} return s; }
+  // Sürüm (v1 tam site | v2 sade arayüz). Bu sekmede açık olan sürüm sessionStorage'da tutulur (yenilemede aynısı açılır).
+  // Girişte açılacak sürüm "açılış sürümü" ayarıdır: bütün cihazlarda aynı olsun diye ortak kayıt dalında ayar/acilis.json
+  // dosyasında durur (v1'in eşitlediği kayit/ klasörünün dışında); son bilinen değer bu tarayıcıda önbellektedir. Varsayılan v1.
+  var SURUM = 'rahle.yayin.surum', ACILIS = 'rahle.yayin.acilis', ACILIS_YOL = 'ayar/acilis.json';
+  var gecerli = function (s) { return s === 'v2' ? 'v2' : 'v1'; };
+  function surumAl() { var s = null; try { s = sessionStorage.getItem(SURUM); } catch (e) {} return s ? gecerli(s) : null; }
+  function surumYaz(s) { s = gecerli(s); try { sessionStorage.setItem(SURUM, s); } catch (e) {} return s; }
+  function acilisOnbellek() { var s = null; try { s = localStorage.getItem(ACILIS); } catch (e) {} return gecerli(s); }
+  function acilisDepo() { return bag && O ? depoYap(bag, bag.depo, bag.dal) : null; }
+  // ortak kayıttan oku (en çok 3 sn); okunamazsa önbellek
+  function acilisOku() {
+    var d = acilisDepo(); if (!d) return Promise.resolve(acilisOnbellek());
+    var oku = d.istek('GET', '/contents/' + ACILIS_YOL + '?ref=' + encodeURIComponent(d.dal)).then(function (f) {
+      var o = JSON.parse(dec.decode(b64(String(f.content || '').replace(/\s/g, '')))); var s = gecerli(o && o.surum);
+      try { localStorage.setItem(ACILIS, s); } catch (e) {} return s;
+    }, function () { return acilisOnbellek(); });
+    return Promise.race([oku, new Promise(function (c) { setTimeout(function () { c(acilisOnbellek()); }, 3000); })]);
+  }
+  // yaz: önbellek hemen; ortak kayıt bağlıysa ayar/acilis.json güncellenir → { ortak: true | false }
+  function acilisYaz(s) {
+    s = gecerli(s); try { localStorage.setItem(ACILIS, s); } catch (e) {}
+    var d = acilisDepo(); if (!d) return Promise.resolve({ surum: s, ortak: false });
+    var govde = { message: 'Rahle: açılış sürümü ' + s, content: utf8b64(JSON.stringify({ sema: 'rahle-acilis-1', surum: s, t: new Date().toISOString(), yazan: kullanici }, null, 1) + '\n'), branch: d.dal };
+    var dene = function (n) {
+      return d.istek('GET', '/contents/' + ACILIS_YOL + '?ref=' + encodeURIComponent(d.dal)).then(function (f) { return f && f.sha; }, function (e) { if (e && e.durum === 404) return null; throw e; })
+        .then(function (sha) { var g = Object.assign({}, govde); if (sha) g.sha = sha; return d.istek('PUT', '/contents/' + ACILIS_YOL, g); })
+        .then(function () { return { surum: s, ortak: true }; }, function (e) { if (n < 2 && e && (e.durum === 409 || e.durum === 422)) return dene(n + 1); throw e; });
+    };
+    return dene(0);
+  }
   // localStorage anahtarı bilerek 'rahle.' önekli değil: Rahle'nin deposu o önekteki yerel olmayan anahtarları taşır.
   var YEREL_BAG = 'rahleYayin.ortak', MUHUR_EK = 'rahle-ortak';
   var VARSAYILAN = { depo: 'Ramazan9838/Rahle', dal: 'ortak-kayit', yayin: 'Ramazan9838/Buhkari_Criticism_Website' };
@@ -486,10 +498,15 @@ button:disabled { opacity: .6; cursor: progress; }
   // Bu sayfa yalnız şifre çözer ve siteyi açar; uygulama kodunun tamamı şifreli sitenin içindedir.
 
   function siteAc() {
-    // v2 yalnız kasada 'v2' dosyası varsa açılır; yoksa v1 (tam site).
-    var ad = surumAl() === 'v2' && kasa && kasa.dosyalar && kasa.dosyalar.v2 ? 'v2' : 'site';
-    durum(ad === 'v2' ? 'Rahle v2 açılıyor…' : 'Site açılıyor…');
-    return Promise.all([dosyaAc(ad, function (n, t) { if (t > 1) durum('Site indiriliyor… ' + n + '/' + t); }), bagYukle()]).then(function (x) {
+    // Sürüm: bu sekmede açık olan; yoksa açılış sürümü (ortak kayıt). v2 yalnız kasada 'v2' dosyası varsa açılır.
+    durum('Site açılıyor…');
+    var ad;
+    return bagYukle().then(function () { var s = surumAl(); return s || acilisOku(); }).then(function (s) {
+      ad = surumYaz(s) === 'v2' && kasa && kasa.dosyalar && kasa.dosyalar.v2 ? 'v2' : 'site';
+      if (ad === 'site') surumYaz('v1');
+      if (ad === 'v2') durum('Rahle v2 açılıyor…');
+      return Promise.all([dosyaAc(ad, function (n, t) { if (t > 1) durum('Site indiriliyor… ' + n + '/' + t); })]);
+    }).then(function (x) {
       var metin = x[0];
       // Eski #/oku yer imleri artık yeni ana sayfa olan Hadise göre'ye gider.
       var ilkRota = ad === 'v2' ? (location.hash || '') : location.hash === '#/oku' ? '#/oku/hadis' : (location.hash || '');
@@ -508,7 +525,8 @@ button:disabled { opacity: .6; cursor: progress; }
   }
 
   // Sitenin içinden öbür sürüme geçiş (v1 komut paleti, v2 üst çubuğu): tercih yazılır, adres sıfırlanır, site yeniden açılır.
-  window.__rahleSurum = function () { return surumAl(); };
+  window.__rahleSurum = function () { return surumAl() || 'v1'; };
+  window.__rahleAcilis = { oku: acilisOku, yaz: acilisYaz, onbellek: acilisOnbellek, ortakBagli: function () { return !!acilisDepo(); } };
   window.__rahleSurumAc = function (s) {
     surumYaz(s);
     try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
@@ -521,11 +539,8 @@ button:disabled { opacity: .6; cursor: progress; }
     else durum('Açılamadı: ' + (e && e.message || e), true);
   }
 
-  (function () { var r = document.querySelector('#surum-secim input[value="' + surumAl() + '"]'); if (r) r.checked = true; })();
   $('form').addEventListener('submit', function (ev) {
     ev.preventDefault();
-    var secili = document.querySelector('#surum-secim input[name="surum"]:checked');
-    surumYaz(secili ? secili.value : 'v1');
     $('gir').disabled = true;
     durum('Şifre doğrulanıyor…');
     kasaGetir().then(function () {
