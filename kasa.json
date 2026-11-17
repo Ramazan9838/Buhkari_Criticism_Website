@@ -1,6 +1,6 @@
 {
- "surum": "rahle-38ef7e9",
- "guncelleme": "2026-11-17T14:00:37+00:00",
+ "surum": "rahle-119c053",
+ "guncelleme": "2026-11-17T18:56:27+00:00",
  "yuvalar": [
   {
    "kullanici": "Admin",
@@ -18,10 +18,10 @@
    ]
   },
   "v2": {
-   "ozet": "06e704fc541e5d6b49a3ea0f4f148ddbc8df0b84ffe1731cd6d8541392e6f940",
-   "boyut": 797971,
+   "ozet": "5af0df4c2f0f359a86e7c7b90d5e6cc4c9b8810b38bf8a9dbde07f9f547b7c37",
+   "boyut": 816808,
    "parcalar": [
-    "veri/v2.06e704fc541e.0.bin"
+    "veri/v2.5af0df4c2f0f.0.bin"
    ]
   },
   "okuma": {
@@ -92,6 +92,13 @@
    "boyut": 43895,
    "parcalar": [
     "veri/salatmasasi-veri-kisi.bca6c6a92fe8.0.bin"
+   ]
+  },
+  "salatmasasi-veri-odak": {
+   "ozet": "1dd6888e0ed67fa7a01422eacd1d4be9847b2e38dfc5c79a4c1b28700ce15759",
+   "boyut": 1254152,
+   "parcalar": [
+    "veri/salatmasasi-veri-odak.1dd6888e0ed6.0.bin"
    ]
   },
   "salatmasasi-veri-p_000": {
@@ -655,10 +662,10 @@
    ]
   },
   "salatmasasi": {
-   "ozet": "3fed7df5cf0447dc0aef20cc4320e92a449a0b36945e3b859c921d4518167366",
-   "boyut": 20323,
+   "ozet": "1f77a2dd210e2cb1e1b51426e8fa1c9866bab7507c2405daa2ef99add8353406",
+   "boyut": 20546,
    "parcalar": [
-    "veri/salatmasasi.3fed7df5cf04.0.bin"
+    "veri/salatmasasi.1f77a2dd210e.0.bin"
    ]
   },
   "aktarim-P_A": {
