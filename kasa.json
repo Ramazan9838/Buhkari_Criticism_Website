@@ -1,6 +1,6 @@
 {
- "surum": "rahle-6a41931",
- "guncelleme": "2026-11-21T13:11:38+00:00",
+ "surum": "rahle-e18ab9b",
+ "guncelleme": "2026-11-21T13:29:58+00:00",
  "yuvalar": [
   {
    "kullanici": "Admin",
@@ -11,17 +11,17 @@
  ],
  "dosyalar": {
   "site": {
-   "ozet": "0775799ddb0023f79654bc4eacc688dfb646bbd074a10b47b8df69888217bbad",
-   "boyut": 7514198,
+   "ozet": "883d196fee68dd6252d2aab6c36f0eba6550fa76ec56231814a6a0a7a20f8452",
+   "boyut": 7517483,
    "parcalar": [
-    "veri/site.0775799ddb00.0.bin"
+    "veri/site.883d196fee68.0.bin"
    ]
   },
   "v2": {
-   "ozet": "2ffe2614a6dac334c725427689189cc24e24a9c002330a18c5aab1c9ba1bbe13",
-   "boyut": 885614,
+   "ozet": "1a2dbc5579dc73d003a8535aa56998d152dedc1db78117285c67d9b90dd1adec",
+   "boyut": 886011,
    "parcalar": [
-    "veri/v2.2ffe2614a6da.0.bin"
+    "veri/v2.1a2dbc5579dc.0.bin"
    ]
   },
   "okuma": {
@@ -46,10 +46,10 @@
    ]
   },
   "salatmasasi-sayfa": {
-   "ozet": "6109460107842f1f70d74c6a21aa7181ebfebd74fb166270256305f39c11eab1",
-   "boyut": 38070,
+   "ozet": "a767d1870cae036e4475e861a4afdd81cbbde63773d397913cf592095cf36862",
+   "boyut": 38126,
    "parcalar": [
-    "veri/salatmasasi-sayfa.610946010784.0.bin"
+    "veri/salatmasasi-sayfa.a767d1870cae.0.bin"
    ]
   },
   "salatmasasi-veri-deneme": {
@@ -1032,6 +1032,13 @@
     "veri/salatmasasi-belge-CEVIRI_DENETIMI.ffb77791ab3f.0.bin"
    ]
   },
+  "salatmasasi-belge-DOLASIM_ADAYLARI": {
+   "ozet": "17240f7c60af56993c05d3ead05b30abdc7a5c6eb338d84609258c55f5b639c2",
+   "boyut": 89239,
+   "parcalar": [
+    "veri/salatmasasi-belge-DOLASIM_ADAYLARI.17240f7c60af.0.bin"
+   ]
+  },
   "salatmasasi-belge-ISTEM_MH": {
    "ozet": "75dbed15b11c962d485f526605967520efba9d89a2d029645876a868b2384524",
    "boyut": 9148,
@@ -1079,6 +1086,13 @@
    "boyut": 638235,
    "parcalar": [
     "veri/salatmasasi-belge-KURALLAR.291a555b02e8.0.bin"
+   ]
+  },
+  "salatmasasi-belge-KURAL_ADAYLARI": {
+   "ozet": "87c19cf600e0d6eb7cd2378456028784185bf757ce4cd65ad25b274539aac998",
+   "boyut": 9388,
+   "parcalar": [
+    "veri/salatmasasi-belge-KURAL_ADAYLARI.87c19cf600e0.0.bin"
    ]
   },
   "salatmasasi-belge-LIT_00": {
@@ -1222,10 +1236,10 @@
    ]
   },
   "salatmasasi": {
-   "ozet": "4d123bb81b68b4011eb3130865830aa3e7bd30571be4c3a6d1fb5bec88804ace",
-   "boyut": 38689,
+   "ozet": "5952d7f6989357cf597ac76409205672dcecff934e465b4cd813c4d891b19fa5",
+   "boyut": 39191,
    "parcalar": [
-    "veri/salatmasasi.4d123bb81b68.0.bin"
+    "veri/salatmasasi.5952d7f69893.0.bin"
    ]
   },
   "aktarim-P_A": {
