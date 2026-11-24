@@ -1,6 +1,6 @@
 {
- "surum": "rahle-c17d180",
- "guncelleme": "2026-11-24T08:11:28+00:00",
+ "surum": "rahle-a848a54",
+ "guncelleme": "2026-11-24T18:37:37+00:00",
  "yuvalar": [
   {
    "kullanici": "Admin",
@@ -46,10 +46,10 @@
    ]
   },
   "salatmasasi-sayfa": {
-   "ozet": "cb800c6cf20ab99bf194467058e0ec6ec8a62cb42269425e9bb7b07627e3b396",
-   "boyut": 40602,
+   "ozet": "d520860772881e83d89a514e16e00603be4ef8a5eee7e42d914827baae0bfa59",
+   "boyut": 40601,
    "parcalar": [
-    "veri/salatmasasi-sayfa.cb800c6cf20a.0.bin"
+    "veri/salatmasasi-sayfa.d52086077288.0.bin"
    ]
   },
   "salatmasasi-veri-deneme": {
@@ -1124,10 +1124,10 @@
    ]
   },
   "salatmasasi-belge-ILKELER": {
-   "ozet": "cdacdeec2011f5be6815dce170de14418093e9e6c51bdf455553fbb4800f73dc",
-   "boyut": 3650,
+   "ozet": "c2fa15b793ae70bcb631a26ad03c6a031906d82ec2aebb15a29a04d86c874c80",
+   "boyut": 4771,
    "parcalar": [
-    "veri/salatmasasi-belge-ILKELER.cdacdeec2011.0.bin"
+    "veri/salatmasasi-belge-ILKELER.c2fa15b793ae.0.bin"
    ]
   },
   "salatmasasi-belge-ISTEM_MH": {
@@ -1341,10 +1341,10 @@
    ]
   },
   "salatmasasi": {
-   "ozet": "49f4e18a7c6f7bb4788490ed6de2f021d0fa7b555fe0997df3f3f9e1890b9253",
-   "boyut": 42594,
+   "ozet": "6e38231104f81a8aee61150a7d4f7c0c31208dc069a5c5bc0b62b109f5fe9e1b",
+   "boyut": 42595,
    "parcalar": [
-    "veri/salatmasasi.49f4e18a7c6f.0.bin"
+    "veri/salatmasasi.6e38231104f8.0.bin"
    ]
   },
   "aktarim-P_A": {
