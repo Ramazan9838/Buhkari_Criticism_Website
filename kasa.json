@@ -1,6 +1,6 @@
 {
- "surum": "rahle-a7f0e7a",
- "guncelleme": "2026-11-24T07:28:02+00:00",
+ "surum": "rahle-9fc29cf",
+ "guncelleme": "2026-11-24T07:52:43+00:00",
  "yuvalar": [
   {
    "kullanici": "Admin",
@@ -74,24 +74,24 @@
    ]
   },
   "salatmasasi-veri-istat": {
-   "ozet": "b42e2093960c52797404fbd6389ad3af4c780da7652d7725c2333517879e62a5",
-   "boyut": 311797,
+   "ozet": "7e95c1556cfd94befb9490c570f34d11d16483608ab62dda157a88f303dbfa89",
+   "boyut": 311800,
    "parcalar": [
-    "veri/salatmasasi-veri-istat.b42e2093960c.0.bin"
+    "veri/salatmasasi-veri-istat.7e95c1556cfd.0.bin"
    ]
   },
   "salatmasasi-veri-istat_aday": {
-   "ozet": "f9955a583ff97a8a927a137da9333a15bc79c4d1f29c49d04731d472665e47c5",
-   "boyut": 320137,
+   "ozet": "956f5fbd9f08f3bfc00c0a649a95efceb0550c7570a779fa27e690c92411c66b",
+   "boyut": 320133,
    "parcalar": [
-    "veri/salatmasasi-veri-istat_aday.f9955a583ff9.0.bin"
+    "veri/salatmasasi-veri-istat_aday.956f5fbd9f08.0.bin"
    ]
   },
   "salatmasasi-veri-kavram": {
-   "ozet": "74fff5977bb4864bb294bbf6d691a681e3a886ce3c5d430a310c5563ed8b31b6",
-   "boyut": 444325,
+   "ozet": "834c1f8ce279ed0af088aedbcaefe361891c6bab6215e881483649f0697c8056",
+   "boyut": 444713,
    "parcalar": [
-    "veri/salatmasasi-veri-kavram.74fff5977bb4.0.bin"
+    "veri/salatmasasi-veri-kavram.834c1f8ce279.0.bin"
    ]
   },
   "salatmasasi-veri-kisi": {
@@ -382,10 +382,10 @@
    ]
   },
   "salatmasasi-veri-p_039": {
-   "ozet": "b035835a5eb2a2b836e395ee68d32e2093fce88b63932a98c057ff3854f583b2",
-   "boyut": 338726,
+   "ozet": "f3d9b12202b5d7cdf2c029a5ae01b9c12f4d2b9ffcfb4536482089e7e429c427",
+   "boyut": 338724,
    "parcalar": [
-    "veri/salatmasasi-veri-p_039.b035835a5eb2.0.bin"
+    "veri/salatmasasi-veri-p_039.f3d9b12202b5.0.bin"
    ]
   },
   "salatmasasi-veri-p_040": {
@@ -1341,10 +1341,10 @@
    ]
   },
   "salatmasasi": {
-   "ozet": "69e609251005283d4ee131b376c5b0a9f6ee14558ee5984f5f6751b5c0f9c440",
+   "ozet": "642ccad196aa42bbe209af71d681dd50029f96be2a19e17a7c6105ef4b8c2676",
    "boyut": 42594,
    "parcalar": [
-    "veri/salatmasasi.69e609251005.0.bin"
+    "veri/salatmasasi.642ccad196aa.0.bin"
    ]
   },
   "aktarim-P_A": {
