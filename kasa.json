@@ -1,6 +1,6 @@
 {
- "surum": "rahle-caf4dbf",
- "guncelleme": "2026-11-28T08:32:51+00:00",
+ "surum": "rahle-2cc0ac9",
+ "guncelleme": "2026-11-28T08:54:14+00:00",
  "yuvalar": [
   {
    "kullanici": "Admin",
@@ -60,31 +60,31 @@
    ]
   },
   "salatmasasi-veri-dizin": {
-   "ozet": "6f43729ebd6f1a50801b9ce12896a2a9a639eb0afb8dc063026b5cacd089a744",
-   "boyut": 430893,
+   "ozet": "8d1e50dc9bf8db2d283f67872d4f9a080d407e87c2a650f24699c98da8b66c7c",
+   "boyut": 430919,
    "parcalar": [
-    "veri/salatmasasi-veri-dizin.6f43729ebd6f.0.bin"
+    "veri/salatmasasi-veri-dizin.8d1e50dc9bf8.0.bin"
    ]
   },
   "salatmasasi-veri-hadis": {
-   "ozet": "9dc8bd6ac60a9faea787849babbfb93582b5bd4b51b39ed4fa2a0b8a9624f131",
-   "boyut": 76352,
+   "ozet": "517cb8958f0d09ad3560dabdd0a9349aa451b34fa713019a5cbe181c1ff0c3c1",
+   "boyut": 76341,
    "parcalar": [
-    "veri/salatmasasi-veri-hadis.9dc8bd6ac60a.0.bin"
+    "veri/salatmasasi-veri-hadis.517cb8958f0d.0.bin"
    ]
   },
   "salatmasasi-veri-istat": {
-   "ozet": "3e53720b1ffc945981f693cc3207b4c5260324b473874502b96e08705951f3a6",
-   "boyut": 324693,
+   "ozet": "dfee2d529e1e517ed4e928ea590ab6c9aea7845369c7d04ad6035f2dcbbaf63f",
+   "boyut": 324311,
    "parcalar": [
-    "veri/salatmasasi-veri-istat.3e53720b1ffc.0.bin"
+    "veri/salatmasasi-veri-istat.dfee2d529e1e.0.bin"
    ]
   },
   "salatmasasi-veri-istat_aday": {
-   "ozet": "535d3a40f7462c863f741386bbc34b9a195752a8080ab63086b05368932098fc",
-   "boyut": 328610,
+   "ozet": "ed3d99ed04f4422a811e00abb054789f8baf6853643eb64bb0273e1bc2961427",
+   "boyut": 328332,
    "parcalar": [
-    "veri/salatmasasi-veri-istat_aday.535d3a40f746.0.bin"
+    "veri/salatmasasi-veri-istat_aday.ed3d99ed04f4.0.bin"
    ]
   },
   "salatmasasi-veri-kavram": {
@@ -95,10 +95,10 @@
    ]
   },
   "salatmasasi-veri-kisi": {
-   "ozet": "a1775826722e7b5f33bc209bb074fbf1ac7547462e4da2ebc845a1ca4409b96e",
-   "boyut": 75784,
+   "ozet": "3d340d8ec42cab1f00f83e59dfe3e9ba4f64fb834682204708a7e80dcdb11f88",
+   "boyut": 75145,
    "parcalar": [
-    "veri/salatmasasi-veri-kisi.a1775826722e.0.bin"
+    "veri/salatmasasi-veri-kisi.3d340d8ec42c.0.bin"
    ]
   },
   "salatmasasi-veri-odak": {
@@ -109,45 +109,45 @@
    ]
   },
   "salatmasasi-veri-p_000": {
-   "ozet": "475cc4e6ceb3270d52df02205296ee5878b34d9e6be393859005046444eae058",
-   "boyut": 370676,
+   "ozet": "5bc4bbde0c2519544159de024ac9e78aa15ae3c3e5cb7c141ebd6ae259a55def",
+   "boyut": 370703,
    "parcalar": [
-    "veri/salatmasasi-veri-p_000.475cc4e6ceb3.0.bin"
+    "veri/salatmasasi-veri-p_000.5bc4bbde0c25.0.bin"
    ]
   },
   "salatmasasi-veri-p_001": {
-   "ozet": "bc78392aae2f9eae245df44aed741fd9d126c579c76b1ede407a7540215d503e",
-   "boyut": 361236,
+   "ozet": "a651267ca2836c214473d70dd47eb6f012663332da3fbc2b924a2190fe9f938c",
+   "boyut": 361233,
    "parcalar": [
-    "veri/salatmasasi-veri-p_001.bc78392aae2f.0.bin"
+    "veri/salatmasasi-veri-p_001.a651267ca283.0.bin"
    ]
   },
   "salatmasasi-veri-p_002": {
-   "ozet": "e70d38eb787889371541542196cf0d49bf40a0c6a799b76258f4234bcac92074",
-   "boyut": 353013,
+   "ozet": "c0a02fc0a373627f4349499ff70b67c2cf2d738884c419bccbc01057b3e5bf90",
+   "boyut": 353063,
    "parcalar": [
-    "veri/salatmasasi-veri-p_002.e70d38eb7878.0.bin"
+    "veri/salatmasasi-veri-p_002.c0a02fc0a373.0.bin"
    ]
   },
   "salatmasasi-veri-p_003": {
-   "ozet": "f8ca7a62294f4d988df05cf641000c2cf39d104f93b57e31d5c9790acdc3657d",
-   "boyut": 321730,
+   "ozet": "a57a73076d9cf501fae45dca379e8886a27dd17805f3f17a7aee0346891e8434",
+   "boyut": 321795,
    "parcalar": [
-    "veri/salatmasasi-veri-p_003.f8ca7a62294f.0.bin"
+    "veri/salatmasasi-veri-p_003.a57a73076d9c.0.bin"
    ]
   },
   "salatmasasi-veri-p_004": {
-   "ozet": "92051906faa66973c410843503c96db259414dcb21844ed1a5d18a71ccf5eea5",
-   "boyut": 308566,
+   "ozet": "214a101d8710571f862f74787505914041b32b0506171339896db3f0cec4f8c2",
+   "boyut": 308533,
    "parcalar": [
-    "veri/salatmasasi-veri-p_004.92051906faa6.0.bin"
+    "veri/salatmasasi-veri-p_004.214a101d8710.0.bin"
    ]
   },
   "salatmasasi-veri-p_005": {
-   "ozet": "e160f9b1dcd15bcb586f2b66e053e0a2648f90a17d5c611ec6b0adf0d538f4a4",
-   "boyut": 288457,
+   "ozet": "d568d5997115fae50541db702bfeee77fb44a839b500a2928c216d99bdda6ec6",
+   "boyut": 288562,
    "parcalar": [
-    "veri/salatmasasi-veri-p_005.e160f9b1dcd1.0.bin"
+    "veri/salatmasasi-veri-p_005.d568d5997115.0.bin"
    ]
   },
   "salatmasasi-veri-p_006": {
@@ -158,10 +158,10 @@
    ]
   },
   "salatmasasi-veri-p_007": {
-   "ozet": "4764803725ef7ce1030d360fbc2c5b30e89efba19fcda74021d97ceaefab5142",
-   "boyut": 300854,
+   "ozet": "acd9d6ce46a1549e10b99bfbfab169a9fd2b1b580628085083f5f4052182e38d",
+   "boyut": 300895,
    "parcalar": [
-    "veri/salatmasasi-veri-p_007.4764803725ef.0.bin"
+    "veri/salatmasasi-veri-p_007.acd9d6ce46a1.0.bin"
    ]
   },
   "salatmasasi-veri-p_008": {
@@ -228,10 +228,10 @@
    ]
   },
   "salatmasasi-veri-p_017": {
-   "ozet": "3032f880dec6aaf4c85b223a9521a6be5f736c49a372f2a8be64d7b9a391f33b",
-   "boyut": 270993,
+   "ozet": "8d25f0256b2fc447184f4d90f1e4340e36d854a054a6200992e5a37f88d5f7cc",
+   "boyut": 271045,
    "parcalar": [
-    "veri/salatmasasi-veri-p_017.3032f880dec6.0.bin"
+    "veri/salatmasasi-veri-p_017.8d25f0256b2f.0.bin"
    ]
   },
   "salatmasasi-veri-p_018": {
@@ -270,17 +270,17 @@
    ]
   },
   "salatmasasi-veri-p_023": {
-   "ozet": "eeff978a66501b975432d43b19653e84c6f41ee7ef8aa607fc198d78df0a60cd",
+   "ozet": "0205df1d75f5987f0c2684c4fe6f2bad0db26c321d91a61a1bce24a3a3a8c882",
    "boyut": 258353,
    "parcalar": [
-    "veri/salatmasasi-veri-p_023.eeff978a6650.0.bin"
+    "veri/salatmasasi-veri-p_023.0205df1d75f5.0.bin"
    ]
   },
   "salatmasasi-veri-p_024": {
-   "ozet": "d46cdeffab9467d75fb8b224ad540fb897ea1ab6d4c63041208e96aacaf4e8ee",
-   "boyut": 276867,
+   "ozet": "57ab6c1e454ee12631095a9a3d50b6eff5e4c1bfe59af913de9f0547b0ebe418",
+   "boyut": 276868,
    "parcalar": [
-    "veri/salatmasasi-veri-p_024.d46cdeffab94.0.bin"
+    "veri/salatmasasi-veri-p_024.57ab6c1e454e.0.bin"
    ]
   },
   "salatmasasi-veri-p_025": {
@@ -312,10 +312,10 @@
    ]
   },
   "salatmasasi-veri-p_029": {
-   "ozet": "ed1ce1140d97d0efb3cbc185572c8cb810afbc62120531b20c792cb3429933b2",
-   "boyut": 296468,
+   "ozet": "28a5fc1f28796322ede171424255fe857aec6b036d0d4b92c392a8d326c7b88a",
+   "boyut": 296512,
    "parcalar": [
-    "veri/salatmasasi-veri-p_029.ed1ce1140d97.0.bin"
+    "veri/salatmasasi-veri-p_029.28a5fc1f2879.0.bin"
    ]
   },
   "salatmasasi-veri-p_030": {
@@ -326,10 +326,10 @@
    ]
   },
   "salatmasasi-veri-p_031": {
-   "ozet": "db20172542b331f6304b36b06cca0eda23c4fb58e7d2103d4a4de536b69c79f6",
-   "boyut": 274067,
+   "ozet": "e43079e7c48f59433ae70c0802cd14319d1b9bc4639572644f43b6e6aadddf60",
+   "boyut": 274068,
    "parcalar": [
-    "veri/salatmasasi-veri-p_031.db20172542b3.0.bin"
+    "veri/salatmasasi-veri-p_031.e43079e7c48f.0.bin"
    ]
   },
   "salatmasasi-veri-p_032": {
@@ -340,31 +340,31 @@
    ]
   },
   "salatmasasi-veri-p_033": {
-   "ozet": "b38ed3120a207726fe5256690eea116fad187427f0a765001c2a4187959cb59d",
-   "boyut": 286121,
+   "ozet": "2b58536ac7e14c9fef07bf8c0c8ad3529eb681921f07a1b475565caa7429a970",
+   "boyut": 286278,
    "parcalar": [
-    "veri/salatmasasi-veri-p_033.b38ed3120a20.0.bin"
+    "veri/salatmasasi-veri-p_033.2b58536ac7e1.0.bin"
    ]
   },
   "salatmasasi-veri-p_034": {
-   "ozet": "e61901e9c8b91c3ecddd07b3833851bc4567a83408a225e4e38bb52d9f65b3aa",
-   "boyut": 295598,
+   "ozet": "17e7ab333e39d62859eb766306e46b97f8f2bd2e8aab0755b5c0dc470ed9e9d8",
+   "boyut": 295522,
    "parcalar": [
-    "veri/salatmasasi-veri-p_034.e61901e9c8b9.0.bin"
+    "veri/salatmasasi-veri-p_034.17e7ab333e39.0.bin"
    ]
   },
   "salatmasasi-veri-p_035": {
-   "ozet": "d461e7fc922346c4619588bce7f3602981fa1333fbda9735066897a0c3b72d91",
-   "boyut": 340211,
+   "ozet": "8ddb8a3ffe06aa0e299efb46b871a1227d239b551ba7e9f693ce0b10ca7a6860",
+   "boyut": 340076,
    "parcalar": [
-    "veri/salatmasasi-veri-p_035.d461e7fc9223.0.bin"
+    "veri/salatmasasi-veri-p_035.8ddb8a3ffe06.0.bin"
    ]
   },
   "salatmasasi-veri-p_036": {
-   "ozet": "9b4e7b302e8842172d407b365e0f7612195380c83509ae057ac7412b68842a8f",
-   "boyut": 311102,
+   "ozet": "1c847cfa4d5fe1d95021732d3c85a5a623976ec59abff7c09477fd360e4e8072",
+   "boyut": 311047,
    "parcalar": [
-    "veri/salatmasasi-veri-p_036.9b4e7b302e88.0.bin"
+    "veri/salatmasasi-veri-p_036.1c847cfa4d5f.0.bin"
    ]
   },
   "salatmasasi-veri-p_037": {
@@ -375,31 +375,31 @@
    ]
   },
   "salatmasasi-veri-p_038": {
-   "ozet": "19bcb6c60d84e86f6c784744b06056d4c78deafd34c0ae7809bc1b307372da50",
-   "boyut": 277597,
+   "ozet": "62963ffc28bf299cd1ff858c2ec27bee69dec849b56f7e1d4fbfb8394a006a91",
+   "boyut": 277625,
    "parcalar": [
-    "veri/salatmasasi-veri-p_038.19bcb6c60d84.0.bin"
+    "veri/salatmasasi-veri-p_038.62963ffc28bf.0.bin"
    ]
   },
   "salatmasasi-veri-p_039": {
-   "ozet": "408e548ab42728bf6cf3c207a33bf60b165864cb272854f933aa27596bf7326e",
-   "boyut": 271840,
+   "ozet": "5483132b745e14e0be6210b334b5cf5fdc1d020410c6613ac2f214bd47570f3e",
+   "boyut": 271802,
    "parcalar": [
-    "veri/salatmasasi-veri-p_039.408e548ab427.0.bin"
+    "veri/salatmasasi-veri-p_039.5483132b745e.0.bin"
    ]
   },
   "salatmasasi-veri-p_040": {
-   "ozet": "80364d277ec4fc36dd036589253dfbf48d0ea08c7a05241bb303b1c673c0ffc8",
-   "boyut": 286896,
+   "ozet": "2ff54c47ebb3c08c94fadff9555319de3893843f25e106ce6a521b1fa62b712f",
+   "boyut": 286772,
    "parcalar": [
-    "veri/salatmasasi-veri-p_040.80364d277ec4.0.bin"
+    "veri/salatmasasi-veri-p_040.2ff54c47ebb3.0.bin"
    ]
   },
   "salatmasasi-veri-p_041": {
-   "ozet": "92db4427c0a8f839dec9c6b39cc923814f83ac2891fc183b9053a4a6d55c63c7",
-   "boyut": 253761,
+   "ozet": "32769fe568d453d969192031084e965c9ea9284f13d4886c35fc161c3c49734a",
+   "boyut": 253766,
    "parcalar": [
-    "veri/salatmasasi-veri-p_041.92db4427c0a8.0.bin"
+    "veri/salatmasasi-veri-p_041.32769fe568d4.0.bin"
    ]
   },
   "salatmasasi-veri-p_042": {
@@ -410,10 +410,10 @@
    ]
   },
   "salatmasasi-veri-p_043": {
-   "ozet": "b96fe1589968807c601fa03563e8b30e3ca9009abf7a6347d30d75a998733544",
-   "boyut": 294733,
+   "ozet": "bdab2522e534fd199755ab0ebcd6733598f6c33866c6547483a902e612482efb",
+   "boyut": 294703,
    "parcalar": [
-    "veri/salatmasasi-veri-p_043.b96fe1589968.0.bin"
+    "veri/salatmasasi-veri-p_043.bdab2522e534.0.bin"
    ]
   },
   "salatmasasi-veri-p_044": {
@@ -424,17 +424,17 @@
    ]
   },
   "salatmasasi-veri-p_045": {
-   "ozet": "0acc6c9fec4c066a255093332f1f8fccaa4c2bc2ff67387ea4ac9da26c5893bf",
+   "ozet": "d2764802c1bd9a44801a58524fe0bd9925950f1b1748f52f1c2a9eb930a7115b",
    "boyut": 284873,
    "parcalar": [
-    "veri/salatmasasi-veri-p_045.0acc6c9fec4c.0.bin"
+    "veri/salatmasasi-veri-p_045.d2764802c1bd.0.bin"
    ]
   },
   "salatmasasi-veri-p_046": {
-   "ozet": "fd19949439de5c12b78f409bc42ba72250ac2057f96ebbbea0dc50f8b72044d7",
+   "ozet": "d77d4c43314157054547feeac61d474cc40d753db8616e1d884fe7069e497cc1",
    "boyut": 296629,
    "parcalar": [
-    "veri/salatmasasi-veri-p_046.fd19949439de.0.bin"
+    "veri/salatmasasi-veri-p_046.d77d4c433141.0.bin"
    ]
   },
   "salatmasasi-veri-p_047": {
@@ -452,17 +452,17 @@
    ]
   },
   "salatmasasi-veri-p_049": {
-   "ozet": "f63dca2a730e155dc8ee29d844514ed38fdd4b779536a4b8274416df2c3de8f3",
-   "boyut": 287832,
+   "ozet": "b633aff147e8412ccf4798687638b48939f0e473d93ed98194f98d80a1391f44",
+   "boyut": 287696,
    "parcalar": [
-    "veri/salatmasasi-veri-p_049.f63dca2a730e.0.bin"
+    "veri/salatmasasi-veri-p_049.b633aff147e8.0.bin"
    ]
   },
   "salatmasasi-veri-p_050": {
-   "ozet": "3e5da01d5fc7f782eb4fc477ae71c67a2ca7ac9af0a41b50d340d15472c7bc9d",
+   "ozet": "4c3a8a1be720f8d1b1da106b89296e2e580e6cc8b2e2d11c2052aa328f851d03",
    "boyut": 299621,
    "parcalar": [
-    "veri/salatmasasi-veri-p_050.3e5da01d5fc7.0.bin"
+    "veri/salatmasasi-veri-p_050.4c3a8a1be720.0.bin"
    ]
   },
   "salatmasasi-veri-p_051": {
@@ -487,24 +487,24 @@
    ]
   },
   "salatmasasi-veri-p_054": {
-   "ozet": "7f5d231a6c5f6f80390a5bafda6cc8ec17e883bad69a1f9f7991bf4180b744fb",
-   "boyut": 302758,
+   "ozet": "ca1af19ca99c24976b41666a545ff25d65fa72311f19fbe4e3d9438417b168bd",
+   "boyut": 302812,
    "parcalar": [
-    "veri/salatmasasi-veri-p_054.7f5d231a6c5f.0.bin"
+    "veri/salatmasasi-veri-p_054.ca1af19ca99c.0.bin"
    ]
   },
   "salatmasasi-veri-p_055": {
-   "ozet": "8ed5e87d25d9d1095e08fd6db6302be3883fce36d42aa06f5b366d6dcb635c8e",
-   "boyut": 301805,
+   "ozet": "c9d2372b70cfeaa684688cfa9d955befee277b5723223f33aa7746eb802aa536",
+   "boyut": 301847,
    "parcalar": [
-    "veri/salatmasasi-veri-p_055.8ed5e87d25d9.0.bin"
+    "veri/salatmasasi-veri-p_055.c9d2372b70cf.0.bin"
    ]
   },
   "salatmasasi-veri-p_056": {
-   "ozet": "2a2f1cadba16c45595a30fb8a4a740adf3cb7917bee06ceaedea1f91d5b84495",
-   "boyut": 293736,
+   "ozet": "be772f3e5360993d7f74d036ae8f773b8a5ca58bcc0ad03c51892ecd4b7f81c4",
+   "boyut": 293787,
    "parcalar": [
-    "veri/salatmasasi-veri-p_056.2a2f1cadba16.0.bin"
+    "veri/salatmasasi-veri-p_056.be772f3e5360.0.bin"
    ]
   },
   "salatmasasi-veri-p_057": {
@@ -515,17 +515,17 @@
    ]
   },
   "salatmasasi-veri-p_058": {
-   "ozet": "db1f1e958cd31f82c3978b915228c29093fa12214f28690ee91b3060b99d7da9",
-   "boyut": 282787,
+   "ozet": "b8c6f54baf0af12d6160eb7c524a1020f8937984b14400e44425cd2c03941841",
+   "boyut": 282465,
    "parcalar": [
-    "veri/salatmasasi-veri-p_058.db1f1e958cd3.0.bin"
+    "veri/salatmasasi-veri-p_058.b8c6f54baf0a.0.bin"
    ]
   },
   "salatmasasi-veri-p_059": {
-   "ozet": "475521b7d70aa802daa32d18810d6729d24845646176dbe80e59fc9191b5c64f",
-   "boyut": 289249,
+   "ozet": "639af0f55fc15e968f5f1268c7dd5a68f8f9f9315e8fa79e059ebd6c2d9bd5fe",
+   "boyut": 289177,
    "parcalar": [
-    "veri/salatmasasi-veri-p_059.475521b7d70a.0.bin"
+    "veri/salatmasasi-veri-p_059.639af0f55fc1.0.bin"
    ]
   },
   "salatmasasi-veri-p_060": {
@@ -571,10 +571,10 @@
    ]
   },
   "salatmasasi-veri-p_066": {
-   "ozet": "f5824f058abd085d3f1579a4577e374f3597f883d278aa4a7992d9d378640b81",
-   "boyut": 237325,
+   "ozet": "257f9034f6b80f8371aaba7cc647f7c2c06c019e9d111acc3c6ef035b6e7ac70",
+   "boyut": 237329,
    "parcalar": [
-    "veri/salatmasasi-veri-p_066.f5824f058abd.0.bin"
+    "veri/salatmasasi-veri-p_066.257f9034f6b8.0.bin"
    ]
   },
   "salatmasasi-veri-p_067": {
@@ -634,10 +634,10 @@
    ]
   },
   "salatmasasi-veri-sarih": {
-   "ozet": "b35b19ef7e0cfdd1c43cd969a530e0fe1e1149cc0cb380bd7a748b0d5c33840f",
-   "boyut": 44000,
+   "ozet": "3d94dbd537ba81c6a38a060bf3787009a37afbb3af6c811678b558220a3f1c8d",
+   "boyut": 43993,
    "parcalar": [
-    "veri/salatmasasi-veri-sarih.b35b19ef7e0c.0.bin"
+    "veri/salatmasasi-veri-sarih.3d94dbd537ba.0.bin"
    ]
   },
   "salatmasasi-veri-sdm": {
@@ -1299,24 +1299,24 @@
    ]
   },
   "salatmasasi-belge-PROFILLER": {
-   "ozet": "747d6304e46d6d35d9097dc161d03b1a3fadc43fcc54c2cf280024db8cbb1a6a",
-   "boyut": 68484,
+   "ozet": "b7e484bb6f4b68c4e835fb2649bf2e67b38b7fbf75d1ba6670ff081b19eda26a",
+   "boyut": 68464,
    "parcalar": [
-    "veri/salatmasasi-belge-PROFILLER.747d6304e46d.0.bin"
+    "veri/salatmasasi-belge-PROFILLER.b7e484bb6f4b.0.bin"
    ]
   },
   "salatmasasi-belge-RAPOR_MH": {
-   "ozet": "6b29e37403c7f7917163ae26e328299e338610c0db540d31d23f1668c686d08f",
-   "boyut": 21790,
+   "ozet": "8918e017906288a340b2277b7fa430fbba7fbbf0b46d6401d2b7c16939804d22",
+   "boyut": 21782,
    "parcalar": [
-    "veri/salatmasasi-belge-RAPOR_MH.6b29e37403c7.0.bin"
+    "veri/salatmasasi-belge-RAPOR_MH.8918e0179062.0.bin"
    ]
   },
   "salatmasasi-belge-RAPOR_TS": {
-   "ozet": "58d46e76bb7eea78c529e39d0dac0109a77e8f48b6d73d98d077c19a6c1338b7",
-   "boyut": 20279,
+   "ozet": "cb4ecaee5e7652fb5d0ab3f6f0f640f12508b3c55fb34560fb9d11f01bf55673",
+   "boyut": 20291,
    "parcalar": [
-    "veri/salatmasasi-belge-RAPOR_TS.58d46e76bb7e.0.bin"
+    "veri/salatmasasi-belge-RAPOR_TS.cb4ecaee5e76.0.bin"
    ]
   },
   "salatmasasi-belge-SOZLUK_EKI": {
@@ -1348,10 +1348,10 @@
    ]
   },
   "salatmasasi": {
-   "ozet": "d28431638395141bfbe1804e985841c4fab22f0c0fb7e012db5b773d74e23ed6",
+   "ozet": "3e6f38fb36ca99d84c8cac4f60f75b74a5b31e299c206b8302eafadc08b896a6",
    "boyut": 42818,
    "parcalar": [
-    "veri/salatmasasi.d28431638395.0.bin"
+    "veri/salatmasasi.3e6f38fb36ca.0.bin"
    ]
   },
   "aktarim-P_A": {
